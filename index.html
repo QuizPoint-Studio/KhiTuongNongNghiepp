@@ -477,6 +477,33 @@
             return (
               <div className="min-h-screen p-6 sm:p-8 flex flex-col items-center justify-center font-sans relative">
                 <QuizPointLogo />
+                  <div className="fixed bottom-6 left-6 z-[60] animate-enter">
+  <div className="glass-panel px-4 py-3 rounded-2xl border border-brand-200/50 shadow-lg flex items-center gap-2 bg-white/90 backdrop-blur-md">
+    
+    {/* Chấm xanh nhấp nháy Emerald */}
+    <div className="relative flex h-3 w-3">
+      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+      <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+    </div>
+    
+    <div className="flex items-center text-sm font-bold text-emerald-600">
+      <span>Số người đang truy cập:</span>
+      
+      {/* Mẹo: Dùng khung nhỏ để che mất hình người, chỉ hiện con số */}
+      <div className="ml-1 overflow-hidden flex items-center w-[20px] h-5 relative">
+        <img 
+          src="https://whos.amung.us/swidget/quizpoint.png" 
+          alt="Online" 
+          className="absolute max-w-none"
+          style={{ 
+            left: '-18px', // Đẩy hình sang trái để giấu biểu tượng hình người
+            filter: 'sepia(100%) saturate(1000%) hue-rotate(100deg) brightness(80%)' // Chỉnh màu số thành xanh Emerald
+          }} 
+        />
+      </div>
+    </div>
+  </div>
+</div>
                 <div className="w-full max-w-5xl space-y-10 animate-enter text-center mt-12 sm:mt-0">
                   <div className="space-y-4">
                     <div className="inline-flex p-4 rounded-full bg-white shadow-lg mb-2">
@@ -650,4 +677,5 @@
     </script>
 </body>
 </html>
+
 
