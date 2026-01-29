@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc nghiệm Khí tượng & Khí hậu - Modern UI</title>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- MathJax for LaTeX Rendering -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+        
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            200: '#a7f3d0',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        }
+                    },
+                    animation: {
+                        'bounce-slow': 'bounce 3s infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap');
+        body { 
+            font-family: 'Be Vietnam Pro', sans-serif; 
+            background: linear-gradient(135deg, #ecfdf5 0%, #f0f9ff 100%);
+            min-height: 100vh;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-enter { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- ICON COMPONENTS ---
+        const IconWrapper = ({ children, size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+        );
+
+        const CheckCircle = (props) => <IconWrapper {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconWrapper>;
+        const XCircle = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></IconWrapper>;
+        const ArrowLeft = (props) => <IconWrapper {...props}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></IconWrapper>;
+        const RotateCcw = (props) => <IconWrapper {...props}><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></IconWrapper>;
+        const Award = (props) => <IconWrapper {...props}><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></IconWrapper>;
+        const History = (props) => <IconWrapper {...props}><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></IconWrapper>;
+        const Trash2 = (props) => <IconWrapper {...props}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></IconWrapper>;
+        const LogOut = (props) => <IconWrapper {...props}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></IconWrapper>;
+        const Eye = (props) => <IconWrapper {...props}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></IconWrapper>;
+        const ChevronLeft = (props) => <IconWrapper {...props}><polyline points="15 18 9 12 15 6"/></IconWrapper>;
+        const ChevronRight = (props) => <IconWrapper {...props}><polyline points="9 18 15 12 9 6"/></IconWrapper>;
+        const Sparkles = (props) => <IconWrapper {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></IconWrapper>;
+        const Sun = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/></IconWrapper>;
+        const Cloud = (props) => <IconWrapper {...props}><path d="M17.5 19c2.5 0 4.5-2 4.5-4.5 0-2-1.5-3.5-3.5-4-1-3.5-4.5-5.5-8-4.5-2.5.5-4.5 2.5-5 5-2 .5-3.5 2.5-3.5 4.5C2 17.5 4 19 6.5 19h11z"/></IconWrapper>;
+        const Droplet = (props) => <IconWrapper {...props}><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></IconWrapper>;
+        const Zap = (props) => <IconWrapper {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></IconWrapper>;
+        const Globe = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></IconWrapper>;
+        const User = (props) => <IconWrapper {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></IconWrapper>;
+        const Phone = (props) => <IconWrapper {...props}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></IconWrapper>;
+        const Presentation = (props) => <IconWrapper {...props}><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></IconWrapper>;
+        const Layers = (props) => <IconWrapper {...props}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></IconWrapper>;
+        const Target = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></IconWrapper>;
+        const Thermometer = (props) => <IconWrapper {...props}><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></IconWrapper>;
+
+        // ============================================================================
+        // DỮ LIỆU CÂU HỎI (1 - 300)
+        // ============================================================================
+        const FULL_DATA = [
+          [1, "Khí quyển được định nghĩa là gì?", "Là hỗn hợp các chất khí bao quanh Trái Đất và hình thành áp suất khí quyển.", "Là lớp hơi nước bao quanh Trái Đất giúp duy trì sự sống.", "Là khối lượng chất lỏng bao quanh Trái Đất tạo ra mưa.", "Là tầng Ozon bảo vệ Trái Đất khỏi tia cực tím.", "a"],
+          [2, "Ở độ cao nào thì có thể coi như không còn không khí?", "50km", "100km", "150km", "200km", "c"],
+          [3, "90% khối lượng khí quyển tập trung ở độ cao nào?", "0 - 10km", "0 - 20km", "20 - 50km", "Trên 100km", "b"],
+          [4, "Lớp khí quyển ảnh hưởng trực tiếp đến đời sống sinh vật và nơi xảy ra mưa bão nằm ở độ cao nào?", "Dưới 11km", "Dưới 20km", "Từ 20 - 50km", "Trên 50km", "b"],
+          [5, "Tầng không khí nào nằm gần mặt đất nhất?", "Tầng bình lưu", "Tầng đối lưu", "Tầng trung quyển", "Tầng nhiệt quyển", "b"],
+          [6, "Độ cao trung bình của tầng đối lưu là bao nhiêu?", "5km", "11km", "20km", "50km", "b"],
+          [7, "Tầng đối lưu chứa bao nhiêu phần trăm khối lượng khí quyển?", "50%", "70%", "80%", "90%", "c"],
+          [8, "Tầng đối lưu chứa bao nhiêu phần trăm lượng hơi nước của khí quyển?", "80%", "85%", "90%", "95%", "c"],
+          [9, "Trong tầng đối lưu, khi lên cao 1km thì nhiệt độ giảm bao nhiêu độ?", "5,4 độ", "6,0 độ", "6,4 độ", "7,4 độ", "c"],
+          [10, "Đặc điểm nổi bật của tầng đối lưu là gì?", "Không khí chỉ chuyển động theo chiều ngang.", "Có sự chuyển động đối lưu và trao đổi nhiệt với bề mặt đất.", "Nhiệt độ càng lên cao càng tăng mạnh.", "Là nơi tập trung toàn bộ khí Ozon của Trái Đất.", "b"],
+          [11, "Tầng bình lưu nằm ở độ cao khoảng bao nhiêu?", "11 - 20km", "20 - 30km", "50 - 55km", "80 - 100km", "c"],
+          [12, "Đặc điểm của lớp đẳng nhiệt (25km phía dưới) của tầng bình lưu là gì?", "Nhiệt độ trung bình là $0^{\\circ}C$.", "Nhiệt độ trung bình là $-55^{\\circ}C$.", "Nhiệt độ tăng dần theo độ cao.", "Không khí chuyển động theo chiều thẳng đứng.", "b"],
+          [13, "Trong lớp đẳng nhiệt của tầng bình lưu, không khí chuyển động theo hướng nào?", "Từ Tây sang Đông.", "Từ Bắc xuống Nam.", "Chiều ngang từ Đông sang Tây.", "Chuyển động xoáy tròn.", "c"],
+          [14, "Lớp nghịch nhiệt trong tầng bình lưu nằm ở đâu?", "25km phía dưới của tầng.", "25km phía trên của tầng.", "Nằm giữa tầng đối lưu và bình lưu.", "Nằm trên tầng trung quyển.", "b"],
+          [15, "Nhiệt độ trung bình của lớp nghịch nhiệt trong tầng bình lưu là bao nhiêu?", "$-55^{\\circ}C$", "$-70^{\\circ}C$", "$0^{\\circ}C$", "$100^{\\circ}C$", "c"],
+          [16, "Nhiệt độ tối đa có thể đạt được ở lớp nghịch nhiệt tầng bình lưu là:", "$0^{\\circ}C$", "$10^{\\circ}C$", "$20^{\\circ}C$", "$-10^{\\circ}C$", "b"],
+          [17, "Khí Ozon ($O_3$) tập trung chủ yếu ở độ cao nào?", "10 - 15km", "15 - 20km", "20 - 25km (phía trên tầng bình lưu)", "Trên 50km", "c"],
+          [18, "Đặc điểm nhiệt độ của tầng trung quyền là gì?", "Tăng theo độ cao.", "Giảm theo độ cao xuống đến $-70$ đến $-80^{\\circ}C$.", "Không thay đổi theo độ cao.", "Luôn duy trì ở mức $0^{\\circ}C$.", "b"],
+          [19, "Đặc điểm nhiệt độ của tầng nhiệt quyển là gì?", "Tăng theo độ cao.", "Giảm theo độ cao.", "Giữ nguyên mức $-80^{\\circ}C$.", "Biến thiên thất thường.", "a"],
+          [20, "Tầng khí quyển ngoài cùng được gọi là gì?", "Tầng nhiệt quyển", "Tầng đối lưu", "Tầng ngoại quyển", "Tầng bình lưu", "c"],
+          [21, "Trong thành phần không khí nguyên thủy, khí nào chiếm tỷ lệ lớn nhất?", "Nitơ ($N_2$)", "Cacbonic ($CO_2$)", "Hơi nước (60-70%)", "Oxy ($O_2$)", "c"],
+          [22, "Tỷ lệ khí Nitơ ($N_2$) trong không khí hiện đại là bao nhiêu?", "21%", "0.036%", "78%", "0.9%", "c"],
+          [23, "Tỷ lệ khí Oxy ($O_2$) trong không khí hiện đại là bao nhiêu?", "78%", "21%", "0.036%", "4%", "b"],
+          [24, "Tỷ lệ khí Cacbonic ($CO_2$) trong không khí hiện đại là bao nhiêu?", "0.9%", "0.036%", "10 - 15%", "0 - 4%", "b"],
+          [25, "Hàm lượng hơi nước trong không khí hiện đại biến thiên trong khoảng nào?", "0 - 4%", "10 - 20%", "60 - 70%", "Không đổi ở mức 1%", "a"],
+          [26, "Khí Argon ($Ar$) chiếm tỷ lệ bao nhiêu trong không khí hiện đại?", "0.036%", "0.9%", "21%", "78%", "b"],
+          [27, "Mật độ không khí tiêu chuẩn là bao nhiêu?", "1,293 $g/m^3$", "1,293 $kg/m^3$", "12,93 $kg/m^3$", "0,1293 $kg/m^3$", "b"],
+          [28, "So sánh thành phần khí trong đất và khí quyển, nhận định nào sau đây ĐÚNG?", "O2 trong đất cao hơn trong khí quyển.", "N2 và CO2 trong đất cao hơn trong khí quyển.", "N2 trong đất thấp hơn trong khí quyển.", "CO2 trong đất thấp hơn trong khí quyển.", "b"],
+          [29, "Ô nhiễm không khí được hiểu là:", "Sự tăng lên của hàm lượng hơi nước.", "Sự thay đổi về thành phần và tính chất của không khí sạch gây hại cho động thực vật.", "Sự xuất hiện của các đám mây đen trên bầu trời.", "Sự giảm áp suất khí quyển đột ngột.", "b"],
+          [30, "Nguyên nhân gây ra lỗ thủng tầng Ozon theo tài liệu là do:", "Khí CO2 làm nóng trái đất.", "Khí trơ N2O bị phân ly thành các nguyên tử tự do dưới tác dụng của tia sóng ngắn.", "Do bụi bẩn từ các thành phố lớn bốc lên cao.", "Do sự thay đổi nhiệt độ ở tầng đối lưu.", "b"],
+          [31, "Quá trình phá hủy Ozon (O3) diễn ra như thế nào?", "Các nguyên tử tự do biến O2 thành O3.", "Các nguyên tử tự do (từ $N_2O$) biến $O_3$ thành $O_2$.", "Bụi bẩn bám vào $O_3$ làm nó biến mất.", "Tia hồng ngoại trực tiếp phá hủy $O_3$.", "b"],
+          [32, "Áp suất khí quyển là gì?", "Là tốc độ di chuyển của không khí.", "Là trọng lượng của cột không khí thẳng đứng có tiết diện $1cm^2$ từ mức quan trắc đến giới hạn khí quyển.", "Là lực đẩy của hơi nước có trong không khí.", "Là sự chênh lệch nhiệt độ giữa các tầng khí quyển.", "b"],
+          [33, "Gió được định nghĩa là:", "Sự di chuyển của không khí theo phương dọc.", "Sự di chuyển của không khí theo phương ngang từ nơi áp cao đến nơi áp thấp.", "Sự bốc hơi của nước từ đại dương vào đất liền.", "Sự chuyển động của các đám mây trên bầu trời.", "b"],
+          [34, "Sự di chuyển của không khí theo phương dọc được gọi là gì?", "Gió mùa", "Đối lưu", "Xoáy thuận", "Bình lưu", "b"],
+          [35, "Gió mùa đông ở nước ta bắt đầu thổi từ tháng mấy?", "Tháng 1", "Tháng 5", "Tháng 10", "Tháng 12", "c"],
+          [36, "Đặc điểm của gió mùa đông là gì?", "Mang không khí nóng và ẩm.", "Mang không khí lạnh và khô.", "Gây ra mưa rào và dông.", "Thổi từ biển vào đất liền gây lũ lụt.", "b"],
+          [37, "Gió mùa hè (gió Tây Nam) bắt đầu thổi từ tháng mấy?", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 10", "b"],
+          [38, "Đặc điểm của gió mùa hè là gì?", "Mang không khí lạnh, khô.", "Mang không khí ẩm ướt gây mưa.", "Chỉ xuất hiện ở vùng núi cao.", "Thổi từ phương Bắc xuống.", "b"],
+          [39, "Tốc độ gió biển thường ở mức nào?", "Dưới 2m/s", "Trên 5m/s", "Từ 10-20m/s", "Rất mạnh, trên 30m/s", "a"],
+          [40, "Dông thường xảy ra vào thời gian nào trong năm?", "Tháng 1 - 4", "Tháng 4 - 8", "Tháng 8 - 12", "Quanh năm", "b"],
+          [41, "Nguyên nhân chính gây ra dông nhiệt là:", "Do gió mùa đông tràn về đột ngột.", "Do bức xạ mặt trời làm mặt đất nóng lên, không khí nóng ẩm bốc lên cao gặp luồng khí lạnh tràn tới.", "Do sự thay đổi của dòng hải lưu ngoài biển.", "Do sự xuất hiện của lỗ thủng tầng Ozon.", "b"],
+          [42, "Hiện tượng sấm chớp trong dông xảy ra khi nào?", "Khi trời bắt đầu mưa phùn.", "Khi các khối mây tích điện chạm nhau.", "Khi áp suất khí quyển tăng cao.", "Khi gió biển thổi mạnh vào đất liền.", "b"],
+          [43, "Bão thường xuất hiện vào thời gian nào?", "Tháng 1 - 5", "Tháng 6 - 11", "Tháng 10 - 2", "Chỉ xuất hiện vào tháng 7", "b"],
+          [44, "Bão được gọi là gì trong khí tượng?", "Xoáy nghịch nhiệt đới.", "Xoáy thuận nhiệt đới.", "Đối lưu nhiệt đới.", "Nghịch nhiệt tầng bình lưu.", "b"],
+          [45, "Lực nào góp phần tạo thành các xoáy trong quá trình hình thành bão?", "Lực ma sát bề mặt đất.", "Lực li tâm.", "Lực hút của Mặt Trăng.", "Lực đẩy của hơi nước.", "b"],
+          [46, "Bão hình thành khi các xoáy di chuyển gặp các khối khí di chuyển thẳng đứng tạo thành:", "Dải hội tụ.", "Vùng đẳng nhiệt.", "Tầng trung quyển.", "Mây ti tầng.", "a"],
+          [47, "Xoáy thuận là vùng nhiễu loạn khí quyển có đặc điểm áp suất như thế nào?", "Là vùng áp suất cao.", "Là vùng áp suất thấp.", "Có áp suất không đổi.", "Có áp suất biến thiên theo chiều ngang.", "b"],
+          [48, "Đường đẳng áp của xoáy thuận có hình dạng như thế nào?", "Các đường thẳng song song.", "Các đường zic-zac.", "Các đường đẳng áp khép kín đồng tâm.", "Các đường hình parabol.", "c"],
+          [49, "Ở Bắc Bán Cầu, xoáy thuận quay theo chiều nào?", "Cùng chiều kim đồng hồ.", "Ngược chiều kim đồng hồ.", "Từ Đông sang Tây.", "Từ Bắc xuống Nam.", "b"],
+          [50, "Giá trị của đường đẳng áp trong xoáy thuận thay đổi như thế nào?", "Tăng từ ngoài vào trong.", "Giảm từ ngoài vào trong.", "Giữ nguyên không đổi.", "Tăng giảm tùy theo tốc độ gió.", "b"],
+          [51, "Xoáy nghịch có đặc điểm gì so với xoáy thuận?", "Giống hệt xoáy thuận.", "Trái lại với xoáy thuận (áp cao, quay cùng chiều kim đồng hồ ở Bắc Bán Cầu).", "Chỉ xuất hiện ở Nam Bán Cầu.", "Luôn gây ra mưa to.", "b"],
+          [52, "Theo tài liệu, cấu tạo mặt trời từ trong ra ngoài bao gồm các thành phần nào?", "Lõi, vùng bức xạ, vùng đối lưu, quang quyển, sắc quyển, hào quang.", "Lõi, tầng đối lưu, tầng bình lưu, quang quyển, hào quang.", "Vùng bức xạ, vùng đối lưu, tầng ozon, sắc quyển, hào quang.", "Lõi, vùng thu nhiệt, vùng tỏa nhiệt, quang quyển, sắc quyển.", "a"],
+          [53, "Thành phần nào nằm ở vị trí trung tâm của mặt trời?", "Quang quyển", "Vùng bức xạ", "Lõi", "Sắc quyển", "c"],
+          [54, "Thành phần ngoài cùng của mặt trời được gọi là gì?", "Sắc quyển", "Hào quang", "Quang quyển", "Vùng đối lưu", "b"],
+          [55, "Yếu tố nào sau đây KHÔNG phải là đặc trưng của bức xạ mặt trời (BXMT)?", "Cường độ", "Quang chu kỳ", "Độ ẩm không khí", "Quang phổ", "c"],
+          [56, "Cường độ BXMT được định nghĩa là gì?", "Năng lượng chiếu tới một đơn vị diện tích đặt song song với tia tới.", "Năng lượng chiếu tới 1 đơn vị diện tích đặt vuông góc với tia tới trong một đơn vị thời gian.", "Tổng lượng nhiệt mặt đất nhận được trong một ngày.", "Tốc độ di chuyển của các hạt ánh sáng từ mặt trời đến trái đất.", "b"],
+          [57, "Đơn vị đo cường độ BXMT được nhắc đến trong tài liệu là:", "$W/m^2$", "$Kcal/cm^2/tháng$", "$J/cm^2/phút$", "$Cal/m^2/giờ$", "b"],
+          [58, "Hằng số mặt trời là năng lượng bức xạ toàn phần truyền thẳng góc tới diện tích $1cm^2$ trong thời gian bao lâu?", "1 giây", "1 phút", "1 giờ", "24 giờ", "b"],
+          [59, "Hằng số mặt trời được tính ở khoảng cách nào?", "Khoảng cách gần nhất từ mặt trời đến trái đất.", "Khoảng cách xa nhất từ mặt trời đến trái đất.", "Khoảng cách trung bình từ mặt trời đến trái đất.", "Khoảng cách từ mặt trời đến tầng ozon.", "c"],
+          [60, "Dạng bức xạ nào chiếu thẳng từ mặt trời xuống mặt đất dưới dạng các tia song song?", "Tán xạ", "Phản xạ", "Trực xạ", "Bức xạ sóng dài", "c"],
+          [61, "Tán xạ là phần năng lượng BXMT bị yếu tố nào khuếch tán xuống mặt đất?", "Đất đai và cây cỏ.", "Mây và khí quyển.", "Các tòa nhà cao tầng.", "Bề mặt nước biển.", "b"],
+          [62, "Công thức tính tổng xạ là gì?", "Tổng xạ = Trực xạ + Phản xạ", "Tổng xạ = Trực xạ + Tán xạ", "Tổng xạ = Tán xạ - Phản xạ", "Tổng xạ = Trực xạ + Bức xạ sóng dài", "b"],
+          [63, "Phản xạ ($R_n$) xảy ra khi nào?", "Khi BXMT đi xuyên qua mây.", "Khi BXMT bị dội lại khí quyển khi tiếp xúc với một bề mặt nào đó.", "Khi BXMT được đất hấp thụ hoàn toàn.", "Khi BXMT biến thành nhiệt năng trong lòng đất.", "b"],
+          [64, "Bức xạ hữu hiệu được tính bằng công thức nào?", "Tổng xạ - Phản xạ", "$E_d - E_{ngh}$ (Bức xạ sóng dài mặt đất - Bức xạ sóng dài khí quyển)", "Trực xạ + Tán xạ", "$E_{ngh} - E_d$", "b"],
+          [65, "Quang phổ là dải sóng liên tục gồm các tia có bước sóng trong khoảng nào?", "0,2 đến 24 micromet", "Từ 0 đến vô cùng", "0,39 đến 0,76 micromet", "0,76 đến 24 micromet", "b"],
+          [66, "Tia tử ngoại có bước sóng trong khoảng nào?", "0 - 0,2", "0,2 - 0,38", "0,39 - 0,76", "0,76 - 24", "b"],
+          [67, "Tia trông thấy có bước sóng trong khoảng nào?", "0,2 - 0,38", "0,39 - 0,76", "0,76 - 24", "Trên 24", "b"],
+          [68, "Tia hồng ngoại có bước sóng trong khoảng nào?", "0,2 - 0,38", "0,39 - 0,76", "0,76 - 24", "24 - 100", "c"],
+          [69, "Quang chu kỳ được định nghĩa là gì?", "Thời gian mặt trời mọc mỗi ngày.", "Sự lặp đi lặp lại của độ dài ngày.", "Cường độ ánh sáng thay đổi trong ngày.", "Khoảng thời gian từ lúc gieo hạt đến lúc thu hoạch.", "b"],
+          [70, "Cách truyền nhiệt từ phân tử này sang phân tử khác được gọi là gì?", "Truyền nhiệt đối lưu", "Dẫn nhiệt phân tử", "Truyền nhiệt loạn lưu", "Truyền nhiệt bức xạ", "b"],
+          [71, "Truyền nhiệt loạn lưu là hình thức truyền nhiệt theo yếu tố nào?", "Theo dòng nước", "Theo gió", "Theo độ sâu của đất", "Theo tia sáng mặt trời", "b"],
+          [72, "Bức xạ sóng dài khí quyển đóng vai trò trong phương thức truyền nhiệt nào?", "Truyền nhiệt đối lưu", "Truyền nhiệt nhờ bức xạ nhiệt", "Truyền nhiệt loạn lưu", "Dẫn nhiệt phân tử", "b"],
+          [73, "Đâu là một trong những phương thức truyền nhiệt vào không khí được nhắc đến?", "Truyền nhiệt nhờ bốc hơi, ngưng tụ.", "Truyền nhiệt qua lõi trái đất.", "Truyền nhiệt nhờ lực li tâm.", "Truyền nhiệt nhờ áp suất khí quyển.", "a"],
+          [74, "Nhiệt độ trung bình ngày được tính dựa trên mấy lần quan sát?", "2 lần (7h và 19h)", "3 lần (7h, 13h, 19h)", "4 lần (1h, 7h, 13h, 19h)", "24 lần mỗi giờ", "c"],
+          [75, "Nhiệt độ tối cao ở cây được ghi nhận trong khoảng nào?", "30 - 40 độ", "45 - 55 độ", "Trên 60 độ", "25 - 35 độ", "b"],
+          [76, "Nhiệt độ tối thấp của cây ôn đới là bao nhiêu?", "0 đến 5 độ", "$-8$ đến $-10^{\\circ}C$", "3 đến 4 độ", "$-20$ độ", "b"],
+          [77, "Nhiệt độ tối thấp của cây nhiệt đới là bao nhiêu?", "$-8$ đến $-10^{\\circ}C$", "0 độ", "3 - 4 độ", "10 - 15 độ", "c"],
+          [78, "Các đại lượng đặc trưng cho nhiệt độ không khí gồm những gì?", "Chỉ gồm nhiệt độ trung bình ngày và nhiệt độ tối cao.", "Nhiệt độ trung bình ngày, tối cao, tối thấp, tổng nhiệt độ trung bình, hoạt động, hữu hiệu.", "Nhiệt độ đất và nhiệt độ nước.", "Hệ số dẫn nhiệt và nhiệt dung.", "b"],
+          [79, "Đại lượng nào dùng để đánh giá khả năng nóng lên hay lạnh đi nhanh hay chậm của đất?", "Hệ số dẫn nhiệt", "Nhiệt dung", "Lưu lượng nhiệt", "Hệ số truyền nhiệt", "b"],
+          [80, "Đơn vị của hệ số dẫn nhiệt trong đất là gì?", "$Kcal/cm^2$", "$cal/cm^2/cm/s/độ$", "$kg/m^3$", "$mmHg$", "b"],
+          [81, "Hệ số truyền nhiệt ($K$) của đất là tỉ số giữa:", "Nhiệt dung và lưu lượng nhiệt.", "Hệ số dẫn nhiệt và nhiệt dung thể tích.", "Nhiệt độ tối cao và nhiệt độ tối thấp.", "Bức xạ mặt đất và bức xạ khí quyển.", "b"],
+          [82, "Lưu lượng nhiệt trong đất được định nghĩa là:", "Tốc độ thay đổi nhiệt độ của lớp đất mặt.", "Tổng lượng nhiệt truyền xuống lớp đất trong khoảng thời gian nhất định.", "Khả năng giữ nhiệt của đất vào ban đêm.", "Lượng nhiệt bị phản xạ từ bề mặt đất.", "b"],
+          [83, "Áp suất hơi nước ($e$) được định nghĩa là gì?", "Tổng áp suất của toàn bộ khí quyển.", "Phần áp suất do hơi nước chứa trong không khí gây ra.", "Áp suất tối đa mà không khí có thể chịu được.", "Lực đẩy của gió lên hơi nước.", "b"],
+          [84, "Đơn vị đo áp suất hơi nước là:", "$g/cm^3$", "$mmHg$", "$\\%$", "Độ C", "b"],
+          [85, "Áp suất hơi nước bão hòa ($E$) là gì?", "Áp suất hơi nước thấp nhất trong ngày.", "Áp suất hơi nước tối đa ứng với giới hạn tối đa của áp suất hơi nước trong không khí.", "Áp suất lúc trời đang mưa.", "Áp suất hơi nước tại tầng bình lưu.", "b"],
+          [86, "Độ ẩm tuyệt đối ($a$) được đo bằng đơn vị nào?", "$mmHg$", "$g/cm^3$", "$\\%$", "$Kcal/cm^2$", "b"],
+          [87, "Công thức tính độ ẩm tương đối ($r$) là:", "$r = E/e \\times 100$", "$r = e/E \\times 100$", "$r = E - e$", "$r = a/e \\times 100$", "b"],
+          [88, "Độ thiếu hụt bão hòa ($D$) được tính bằng:", "$e/E$", "$E - e$", "$e + E$", "$E/e$", "b"],
+          [89, "Điểm sương được hiểu là:", "Nhiệt độ lúc mặt trời mọc.", "Nhiệt độ mà áp suất hơi nước đạt trạng thái bão hòa.", "Nhiệt độ thấp nhất trong năm.", "Nhiệt độ khiến nước đóng băng.", "b"],
+          [90, "Bốc hơi là quá trình chuyển hóa phân tử nước từ lỏng sang hơi dưới tác dụng chính của:", "Áp suất và độ ẩm.", "Nhiệt và gió.", "Bức xạ tử ngoại.", "Lực hấp dẫn.", "b"],
+          [91, "Thoát hơi khác bốc hơi ở chỗ nào?", "Thoát hơi xảy ra nhanh hơn.", "Thoát hơi xảy ra ở bề mặt mô động, thực vật.", "Thoát hơi chỉ xảy ra vào ban đêm.", "Thoát hơi không cần nhiệt độ cao.", "b"],
+          [92, "Quá trình ngưng kết hơi nước diễn ra khi nào?", "Khi $e < E$.", "Khi $e \\ge E$ và nhiệt độ không khí bằng điểm sương.", "Khi nhiệt độ không khí tăng cao đột ngột.", "Khi có gió mạnh thổi qua mặt nước.", "b"],
+          [93, "Nguyên nhân nào sau đây làm giảm nhiệt độ không khí dẫn đến ngưng kết?", "Do bức xạ nhiệt ban ngày.", "Do lớp không khí gần mặt đất lạnh đi vì bức xạ nhiệt đêm hoặc tiếp xúc mặt đất lạnh.", "Do không khí di chuyển từ nơi áp thấp đến nơi áp cao.", "Do sự gia tăng của khí $CO_2$.", "b"],
+          [94, "Hạt nhân ngưng kết có đặc điểm gì?", "Là những hạt cát lớn.", "Kích thước nhỏ cỡ micro và lơ lửng trong không khí.", "Chỉ xuất hiện ở tầng bình lưu.", "Là những phân tử Ozon.", "b"],
+          [95, "Sương được hình thành trong điều kiện nhiệt độ không khí như thế nào?", "Nhiệt độ $< 0$ độ.", "Nhiệt độ $> 0$ độ.", "Nhiệt độ cực cao.", "Nhiệt độ không thay đổi.", "b"],
+          [96, "Sương thường hình thành vào thời điểm nào?", "Giữa trưa khi nắng gắt.", "Ban đêm khi mặt đất bị lạnh đi vì phát xạ.", "Buổi chiều khi có gió mạnh.", "Ngay sau khi mưa rào.", "b"],
+          [97, "Sương muối có đặc điểm gì?", "Là lớp nước mỏng trên lá.", "Cấu trúc trắng, xốp nhẹ, gây hại cho cây.", "Làm tăng tầm nhìn xa.", "Chỉ hình thành khi nhiệt độ rất cao.", "b"],
+          [98, "Điều kiện hình thành sương muối là:", "Nhiệt độ không khí $> 10$ độ.", "Nhiệt độ không khí $< 0$ độ, trời quang gió nhẹ.", "Trời nhiều mây và gió mạnh.", "Chỉ hình thành vào mùa hè.", "b"],
+          [99, "Sương muối vẫn có thể hình thành ở nhiệt độ dương nếu:", "Độ ẩm cực thấp.", "Nhiệt độ đất rất thấp.", "Gió thổi rất mạnh.", "Có nhiều bụi bẩn.", "b"],
+          [100, "Sương mù làm giảm tầm nhìn xa do ngưng kết hơi nước ở đâu?", "Ở tầng bình lưu.", "Ở lớp khí quyển dưới thấp.", "Ở tầng trung quyển.", "Trên bề mặt lá cây.", "b"],
+          [101, "Khi nhiệt độ dương, sương mù là những giọt nước có bán kính khoảng:", "0,1 - 0,5 micromet", "2 - 5 micromet", "10 - 20 micromet", "1 mm", "b"],
+          [102, "Khi nhiệt độ âm, sương mù tồn tại dưới dạng nào?", "Những giọt nước siêu nhỏ.", "Những tinh thể băng.", "Những hạt bụi.", "Hơi nước không màu.", "b"],
+          [103, "Sương mù bức xạ hình thành do nguyên nhân nào?", "Do không khí nóng ẩm di chuyển trên bề mặt lạnh.", "Kết quả của sự lạnh đi ban đêm vì bức xạ nhiệt của mặt đất.", "Do nước bốc hơi gặp không khí lạnh.", "Do bụi bẩn thành phố.", "b"],
+          [104, "Sương mù bức xạ thường tan đi khi nào?", "Khi trời tối.", "Sau khi mặt trời mọc.", "Khi có mưa phùn.", "Khi nhiệt độ giảm sâu hơn.", "b"],
+          [105, "Sương mù bình lưu hình thành do:", "Sự lạnh đi của đất vào ban đêm.", "Không khí nóng ẩm chuyển dịch trên bề mặt lạnh.", "Sự pha trộn 2 khối không khí bão hòa.", "Nhiệt độ đất cao hơn nhiệt độ không khí.", "b"],
+          [106, "Sương mù bình lưu thường xuất hiện vào mùa nào?", "Chỉ mùa xuân.", "Thu, đông, hạ.", "Chỉ mùa đông.", "Chỉ mùa thu.", "b"],
+          [107, "Sương mù bốc hơi hình thành khi nào?", "Nhiệt độ không khí lớn hơn nhiệt độ bề mặt bốc hơi.", "Nhiệt độ bề mặt bốc hơi lớn hơn nhiệt độ không khí.", "Hai khối không khí nóng gặp nhau.", "Vào buổi sáng mùa hè.", "b"],
+          [108, "Sương mù hỗn hợp hình thành từ:", "Khói bụi và hơi nước.", "Hai khối không khí khác nhau về nhiệt độ nhưng đều gần đạt trạng thái bão hòa.", "Nước biển và không khí đất liền.", "Bức xạ nhiệt và đối lưu.", "b"],
+          [109, "Sương mù thành phố có hạt nhân ngưng kết chính là:", "Muối biển", "Bụi bẩn", "Các tinh thể băng", "Phân tử Ozon", "b"],
+          [110, "Mây là hiện tượng ngưng kết hơi nước ở độ cao nào?", "Dưới 100 mét.", "Từ vài trăm mét trở lên.", "Chỉ từ 10km trở lên.", "Trong tầng bình lưu.", "b"],
+          [111, "Loại mây nào thuộc tầng cao và có dạng tơ sợi, không in bóng trên mặt đất?", "Mây trung tích.", "Mây ti.", "Mây tằng.", "Mây vũ tích.", "b"],
+          [112, "Mây ti có đặc điểm gì về khả năng gây mưa?", "Gây mưa phùn.", "Gây mưa rào.", "Không cho mưa.", "Gây mưa tuyết.", "c"],
+          [113, "Loại mây tầng cao nào có dạng từng đám, từng dải hoặc khối hình kén nhỏ?", "Mây ti tích.", "Mây ti tầng.", "Mây trung tích.", "Mây tích.", "a"],
+          [114, "Mây ti tích có gây mưa không?", "Có, gây mưa nhỏ.", "Không cho mưa.", "Gây mưa đá.", "Chỉ gây mưa vào mùa hè.", "b"],
+          [115, "Loại mây nào tạo nên đường viền hào quang xung quanh mặt trời?", "Mây ti.", "Mây ti tầng.", "Mây trung tầng.", "Mây vũ tằng.", "b"],
+          [116, "Mây ti tầng có cấu tạo như thế nào?", "Dạng sóng.", "Dạng nấm.", "Kiến trúc tơ sợi.", "Đồng nhất màu xám.", "c"],
+          [117, "Các loại mây thuộc tầng cao (Mây ti, Mây ti tích, Mây ti tầng) có điểm chung là:", "Đều gây mưa lớn.", "Đều không cho mưa.", "Đều có màu đen.", "Đều in bóng rõ trên mặt đất.", "b"],
+          [118, "Mây trung tích thuộc tầng nào?", "Tầng cao.", "Tầng giữa.", "Tầng thấp.", "Tầng ngoại quyển.", "b"],
+          [119, "Loại mây nào gây ra hiện tượng ánh sáng ngũ sắc?", "Mây ti.", "Mây trung tích.", "Mây tằng tích.", "Mây vũ tích.", "b"],
+          [120, "Mây trung tích cho loại mưa nào?", "Mưa phùn.", "Mưa rào nhỏ.", "Mưa dầm.", "Không cho mưa.", "b"],
+          [121, "Mây trung tích có hình dạng đặc trưng là gì?", "Dạng sợi.", "Dạng sóng.", "Dạng luống.", "Dạng khối đen.", "b"],
+          [122, "Đặc điểm của mây trung tầng là gì?", "Màu trắng, không mưa.", "Tơi sợi, màu xám, cho mưa.", "Dạng nấm, gây mưa nhỏ.", "Tạo hào quang mặt trời.", "b"],
+          [123, "Mây tầng thấp bao gồm các loại mây nào?", "Mây ti, mây ti tích.", "Mây trung tích, mây trung tầng.", "Mây tằng, mây tằng tích, mây vũ tằng.", "Mây tích và mây vũ tích.", "c"],
+          [124, "Mây tằng có đặc điểm gì?", "Dạng nấm, màu trắng.", "Đồng nhất, màu xám, gây mưa phùn.", "Từng khối nhỏ, không mưa.", "Gây bão lớn.", "b"],
+          [125, "Loại mưa nào do mây tằng gây ra?", "Mưa rào.", "Mưa dầm.", "Mưa phùn.", "Mưa đá.", "c"],
+          [126, "Mây tằng tích có hình dạng như thế nào?", "Đồng nhất một khối.", "Dạng nấm, sóng, luống.", "Tơi sợi như tơ.", "Khối hình kén nhỏ.", "b"],
+          [127, "Mây tằng tích gây ra loại mưa nào?", "Mưa lớn diện rộng.", "Mưa nhỏ.", "Mưa rào đột ngột.", "Mưa tuyết.", "b"],
+          [128, "Đặc điểm của mây vũ tằng là gì?", "Lớp mây màu trắng, mỏng.", "Lớp mây màu xám, gây mưa lớn.", "Dạng sợi, không mưa.", "Chỉ xuất hiện ở tầng cao.", "b"],
+          [129, "Loại mây nào thường gây ra mưa lớn?", "Mây ti.", "Mây vũ tằng.", "Mây tằng tích.", "Mây trung tích.", "b"],
+          [130, "Mây tích có màu sắc và đặc điểm mưa như thế nào?", "Mây đen, gây mưa rào.", "Mây trắng, không cho mưa.", "Màu xám, mưa phùn.", "Màu ngũ sắc, mưa nhỏ.", "b"],
+          [131, "Mây vũ tích có đặc điểm gì?", "Mây trắng, đẹp.", "Mây đen, gây mưa.", "Mây tơ sợi, không mưa.", "Mây đồng nhất, mưa phùn.", "b"],
+          [132, "Mưa được định nghĩa là gì?", "Hơi nước ngưng kết trên lá cây.", "Nước dạng lỏng hoặc rắn rơi từ mây xuống đất.", "Sự bốc hơi nước từ mặt đất lên cao.", "Hiện tượng hào quang xung quanh mặt trời.", "b"],
+          [133, "Điều kiện để phân tử mây hình thành mưa là gì?", "Khi gặp gió mạnh.", "Khi phát triển kích thước lớn hơn ban đầu và thắng được sức cản không khí.", "Khi nhiệt độ không khí tăng lên trên 100 độ.", "Khi mây di chuyển từ biển vào đất liền.", "b"],
+          [134, "Mưa phùn thường rơi từ những loại mây nào?", "Mây vũ tích và mây vũ tằng.", "Mây tằng và mây tằng tích.", "Mây ti và mây ti tích.", "Mây trung tích và mây trung tầng.", "b"],
+          [135, "Kích thước hạt mưa phùn là bao nhiêu?", "Rất lớn, trên 5mm.", "Nhỏ, khoảng 0,5mm.", "Trung bình từ 1-2mm.", "Không có kích thước xác định.", "b"],
+          [136, "Mưa phùn có thể tồn tại dưới dạng nào khác?", "Dạng đá viên.", "Dạng hạt tuyết nhỏ.", "Dạng xoáy thuận.", "Dạng sương muối.", "b"],
+          [137, "Những loại mây nào gây ra mưa dầm?", "Mây tằng tích, mây vũ tằng, mây trung tầng.", "Mây tích và mây vũ tích.", "Mây ti và mây ti tầng.", "Mây trung tích và mây tằng.", "a"],
+          [138, "Kích thước trung bình của hạt mưa dầm là:", "0,5mm.", "1-2mm.", "5-10mm.", "Dưới 0,1mm.", "b"],
+          [139, "Đặc điểm về thời gian và cường độ của mưa dầm là:", "Mưa ngắn, cường độ thay đổi nhiều.", "Cường độ thay đổi ít và mưa lâu.", "Mưa đột ngột rồi tạnh ngay.", "Chỉ xảy ra vào buổi trưa.", "b"],
+          [140, "Mưa rào thường rơi từ loại mây nào?", "Mây tằng.", "Mây vũ tích.", "Mây ti tầng.", "Mây trung tầng.", "b"],
+          [141, "Đặc điểm của mưa rào là gì?", "Hạt mưa nhỏ, mưa rất lâu.", "Hạt mưa lớn, cường độ lớn, thay đổi nhiều, mưa ngắn, đột ngột.", "Cường độ không thay đổi theo thời gian.", "Không bao giờ kèm theo sấm chớp.", "b"],
+          [142, "Hiệu ứng nhà kính là hiện tượng gì?", "Sự giảm nhiệt độ đột ngột trong bầu khí quyển.", "Nghẽn nhiệt trong bầu khí quyển hoặc nhà kính làm nhiệt độ tăng lên dưới tác động của BXMT.", "Sự hình thành băng giá ở hai cực Trái Đất.", "Quá trình quang hợp của cây xanh trong nhà kính.", "b"],
+          [143, "Đâu là nguyên nhân gây ra hiệu ứng nhà kính theo tài liệu?", "Do trồng quá nhiều cây xanh.", "Khí CFC làm tổn hại tầng ozon, khói quang hóa và $NO_2$....", "Do sự di chuyển của các dòng hải lưu.", "Do áp suất khí quyển tăng quá cao.", "b"],
+          [144, "El NiNo là hiện tượng gì?", "Lạnh đi ở bờ biển phía Đông Nam Mỹ.", "Nóng lên ở biển phía Đông Nam Mỹ.", "Mưa lớn kéo dài ở Châu Á.", "Bão tuyết ở Bắc Cực.", "b"],
+          [145, "Chu kỳ xuất hiện của El NiNo là bao lâu?", "Mỗi năm một lần.", "4 - 12 năm một lần.", "20 - 30 năm một lần.", "Không có chu kỳ cố định.", "b"],
+          [146, "El NiNo gây ra hậu quả gì tại Nam Mỹ và Châu Á?", "Hạn hán ở Nam Mỹ, lũ lụt ở Châu Á.", "Lũ lụt tại Nam Mỹ, hạn hán ở Châu Á và Thái Bình Dương.", "Động đất ở cả hai khu vực.", "Làm giảm nhiệt độ toàn cầu.", "b"],
+          [147, "La NiNa là hiện tượng gì?", "Nóng lên toàn cầu.", "Lạnh đi ở bờ biển phía đông Nam Mỹ.", "Bão xoáy thuận ở Bắc Bán Cầu.", "Hiện tượng mây ngũ sắc.", "b"],
+          [148, "Đặc điểm mùa đông của khí hậu Nam Trung Bộ là:", "Rất lạnh, có tuyết rơi.", "Mùa đông không lạnh, nắng nhiều.", "Mùa đông kéo dài từ tháng 10 đến tháng 5 năm sau.", "Mưa dầm liên tục suốt mùa đông.", "b"],
+          [149, "Loại gió nào đặc trưng cho vùng Nam Trung Bộ gây khô nóng?", "Gió mùa Đông Bắc.", "Gió Tây khô nóng.", "Gió biển thổi mạnh quanh năm.", "Gió đối lưu theo phương dọc.", "b"],
+          [150, "Thời gian mưa của vùng Nam Trung Bộ thường vào lúc nào?", "Đầu hè và giữa hè.", "Cuối hè, đầu đông.", "Quanh năm không có mùa khô.", "Chỉ mưa vào tháng 1 và tháng 2.", "b"],
+          [151, "Nhiệt độ trung bình năm của vùng Nam Trung Bộ là bao nhiêu?", "20 - 22 độ.", "25 - 27 độ.", "28 - 30 độ.", "Trên 30 độ.", "b"],
+          [152, "Nhiệt độ cao nhất ghi nhận được ở vùng Nam Trung Bộ là:", "35 - 37 độ.", "40 - 42 độ.", "Trên 45 độ.", "38 - 39 độ.", "b"],
+          [153, "Nhiệt độ thấp nhất ở vùng Nam Trung Bộ có thể xuống tới mức:", "0 - 5 độ.", "8 - 13 độ.", "15 - 20 độ.", "Luôn trên 20 độ.", "b"],
+          [154, "Lượng mưa phía Bắc của vùng Nam Trung Bộ là bao nhiêu?", "1000 - 1200mm.", "1200 - 2000mm.", "2000 - 3000mm.", "Dưới 1000mm.", "b"],
+          [155, "Lượng mưa phía Nam của vùng Nam Trung Bộ là bao nhiêu?", "1200 - 1600mm.", "1600 - 2000mm.", "800 - 1000mm.", "2000 - 2500mm.", "a"],
+          [156, "Những tháng nào vùng Nam Trung Bộ có mưa nhiều nhất?", "Tháng 5, 6, 7.", "Tháng 9, 10, 11.", "Tháng 12, 1, 2.", "Tháng 3, 4, 5.", "b"],
+          [157, "Độ ẩm tương đối trung bình của vùng Nam Trung Bộ là:", "70 - 75%.", "80 - 84%.", "85 - 90%.", "Trên 90%.", "b"],
+          [158, "Lượng bốc hơi ở vùng Nam Trung Bộ nằm trong khoảng:", "500 - 800mm.", "1000 - 1600mm.", "1600 - 2000mm.", "Dưới 500mm.", "b"],
+          [159, "Hạn hán ở Nam Trung Bộ thường xảy ra vào thời gian nào?", "Đầu mùa đông đến cuối mùa đông.", "Cuối mùa đông – giữa hè.", "Chỉ xảy ra vào tháng 9.", "Suốt mùa mưa.", "b"],
+          [160, "Đặc điểm chung về nền nhiệt độ của Tây Nguyên là:", "Rất cao quanh năm.", "Nền nhiệt độ tương đối thấp.", "Luôn ở mức đóng băng vào ban đêm.", "Không có sự thay đổi giữa ngày và đêm.", "b"],
+          [161, "Nhiệt độ ở Tây Nguyên tăng nhanh và đạt cực đại vào tháng mấy?", "Tháng 1, 2.", "Tháng 4, 5.", "Tháng 7, 8.", "Tháng 10, 11.", "b"],
+          [162, "Đặc điểm mưa ở Tây Nguyên là:", "Mưa quanh năm.", "Mưa hè, ít mưa trong mùa đông.", "Mưa tập trung chủ yếu vào mùa đông.", "Chỉ mưa vào ban đêm.", "b"],
+          [163, "Sự tương phản mùa mưa ở Tây Nguyên rõ rệt hơn nhiều so với:", "Mùa gió.", "Mùa nhiệt.", "Mùa bão.", "Mùa hạn.", "b"],
+          [164, "Nhiệt độ trung bình năm của Tây Nguyên là:", "20 - 24 độ.", "24 - 28 độ.", "28 - 30 độ.", "18 - 22 độ.", "b"],
+          [165, "Nhiệt độ cao nhất ở Tây Nguyên nằm trong khoảng:", "30 - 35 độ.", "37 - 40 độ.", "Trên 42 độ.", "35 - 36 độ.", "b"],
+          [166, "Nhiệt độ thấp nhất ghi nhận được ở Tây Nguyên là:", "$-5$ đến 0 độ.", "3 - 9 độ.", "10 - 15 độ.", "15 - 18 độ.", "b"],
+          [167, "Lượng mưa trung bình năm của vùng Tây Nguyên là:", "1000 - 1200mm.", "1400 - 2000mm.", "2000 - 2500mm.", "Trên 3000mm.", "b"],
+          [168, "Các tháng có lượng mưa nhiều nhất ở Tây Nguyên là:", "Tháng 5, 6, 7.", "Tháng 7, 8, 9.", "Tháng 9, 10, 11.", "Tháng 1, 2, 3.", "b"],
+          [169, "Lượng bốc hơi ở vùng Tây Nguyên là:", "1100 - 1500mm.", "900 - 1600mm.", "500 - 900mm.", "Trên 2000mm.", "b"],
+          [170, "Hạn hán ở Tây Nguyên diễn ra vào thời gian nào?", "Nửa đầu mùa đông.", "Nửa sau mùa đông – đầu hè.", "Giữa mùa mưa.", "Suốt cả năm.", "b"],
+          [171, "Đặc điểm về nhiệt độ của vùng Nam Bộ là:", "Nhiệt độ thấp vào mùa đông.", "Nhiệt độ cao quanh năm, nắng nhiều.", "Có sự phân chia 4 mùa rõ rệt.", "Nhiệt độ trung bình năm dưới 20 độ.", "b"],
+          [172, "Thời gian khô hạn ở Nam Bộ thường vào lúc nào?", "Giữa mùa hè.", "Mùa đông và đầu mùa hè.", "Suốt mùa thu.", "Chỉ vào tháng 1.", "b"],
+          [173, "Nhiệt độ trung bình năm của vùng Nam Bộ là:", "25 - 26 độ.", "26,5 – 27,5 độ.", "28 - 29 độ.", "24 - 25 độ.", "b"],
+          [174, "Nhiệt độ cao nhất ở Nam Bộ có thể đạt mức:", "35 - 37 độ.", "38 - 40 độ.", "Trên 42 độ.", "40 - 41 độ.", "b"],
+          [175, "Nhiệt độ tháng lạnh nhất ở Nam Bộ nằm trong khoảng:", "15 - 18 độ.", "24 - 26 độ.", "20 - 22 độ.", "28 - 30 độ.", "b"],
+          [176, "Nhiệt độ thấp nhất (cực tiểu) ở Nam Bộ là:", "5 - 10 độ.", "14 - 18 độ.", "8 - 12 độ.", "Luôn trên 20 độ.", "b"],
+          [177, "Lượng mưa trung bình năm của vùng Nam Bộ là:", "1200 - 1500mm.", "1600 - 2000mm.", "Trên 2500mm.", "800 - 1200mm.", "b"],
+          [178, "Những tháng mưa nhiều nhất ở Nam Bộ là:", "Tháng 5, 6, 7.", "Tháng 8, 9, 10.", "Tháng 10, 11, 12.", "Tháng 1, 2, 3.", "b"],
+          [179, "Lượng bốc hơi trung bình ở vùng Nam Bộ là:", "900 - 1100mm.", "1100 - 1500mm.", "1500 - 2000mm.", "Dưới 1000mm.", "b"],
+          [180, "Thời gian xảy ra hạn hán ở Nam Bộ theo tài liệu là:", "Đầu mùa đông.", "Nửa cuối mùa đông và mùa xuân.", "Giữa mùa hè.", "Tháng 8 và tháng 9.", "b"],
+          [181, "Tổng lượng hơi nước của khí quyển tập trung chủ yếu ở tầng nào?", "Tầng bình lưu", "Tầng đối lưu (90%)", "Tầng nhiệt quyển", "Tầng ngoại quyển", "b"],
+          [182, "Trong tầng bình lưu, lớp nghịch nhiệt có nhiệt độ trung bình là bao nhiêu?", "$-55$ độ", "$-70$ đến $-80$ độ", "$0$ độ", "$40-42$ độ", "c"],
+          [183, "Tại sao tầng đối lưu lại là nơi xảy ra các hiện tượng mưa bão?", "Vì nó nằm ở độ cao trên 50km", "Vì nó chứa 90% hơi nước và có sự chuyển động đối lưu", "Vì nó có khí $N_2$ chiếm 78%", "Vì áp suất khí quyển ở đây thấp nhất", "b"],
+          [184, "Trực xạ là phần năng lượng bức xạ mặt trời chiếu đến mặt đất dưới dạng:", "Các tia khuếch tán từ mây", "Các tia song song", "Các tia dội lại từ khí quyển", "Các tia bước sóng dài từ đất", "b"],
+          [185, "Độ thiếu hụt bão hòa (D) được xác định bằng công thức:", "$e/E * 100$", "$E - e$", "$E * e$", "$E + e$", "b"],
+          [186, "Hạt sương hình thành khi nhiệt độ không khí như thế nào?", "Lớn hơn 0 độ", "Nhỏ hơn 0 độ", "Bằng 100 độ", "Không phụ thuộc vào nhiệt độ", "a"],
+          [187, "Loại sương mù nào xuất hiện vào mùa thu khi nhiệt độ bề mặt bốc hơi lớn hơn nhiệt độ không khí?", "Sương mù bức xạ", "Sương mù bình lưu", "Sương mù bốc hơi", "Sương mù hỗn hợp", "c"],
+          [188, "Mây trung tích cho loại mưa nào sau đây?", "Mưa phùn", "Mưa rào nhỏ", "Mưa dầm", "Mưa đá", "b"],
+          [189, "Mây tằng tích có hình dạng nào?", "Tơi sợi, màu xám", "Dạng nấm, sóng, luống", "Dạng khối kén nhỏ", "Dạng tơ sợi tạo hào quang", "b"],
+          [190, "Mưa phùn do loại mây nào gây ra?", "Mây tằng", "Mây vũ tích", "Mây ti", "Mây trung tầng", "a"],
+          [191, "Vùng nào có nhiệt độ tháng cao nhất lên đến 30 độ C?", "Nam Trung Bộ (N1)", "Tây Nguyên (N2)", "Nam Bộ (N3)", "Tầng đối lưu", "a"],
+          [192, "Vùng nào có nhiệt độ thấp nhất (cực tiểu) có thể xuống tới 3-9 độ C?", "Nam Trung Bộ (N1)", "Tây Nguyên (N2)", "Nam Bộ (N3)", "Tầng bình lưu", "b"],
+          [193, "Lượng mưa nhiều nhất ở vùng Nam Trung Bộ tập trung vào các tháng nào?", "Tháng 7, 8, 9", "Tháng 8, 9, 10", "Tháng 9, 10, 11", "Tháng 1, 2, 3", "c"],
+          [194, "So sánh độ ẩm tương đối, vùng nào có mức thấp nhất trong 3 vùng?", "Nam Trung Bộ (80-84%)", "Tây Nguyên (78-84%)", "Nam Bộ (78-84%)", "Cả B và C đều đúng", "d"],
+          [195, "Vùng nào có lượng bốc hơi cao nhất (lên tới 1600mm)?", "Nam Trung Bộ và Tây Nguyên", "Nam Bộ", "Tầng nhiệt quyển", "Vùng biển Đông Nam Mỹ", "a"],
+          [196, "Hạn hán ở Nam Bộ xảy ra vào thời gian nào?", "Cuối mùa đông – giữa hè", "Nửa sau mùa đông – đầu hè", "Nửa cuối mùa đông, mùa xuân", "Suốt mùa hè", "c"],
+          [197, "Đặc điểm \"Mùa đông lạnh, mùa hè nhiệt độ tăng nhanh\" là của vùng nào?", "Nam Trung Bộ", "Tây Nguyên", "Nam Bộ", "Tầng trung quyển", "b"],
+          [198, "Nhiệt độ trung bình năm của vùng Nam Bộ là bao nhiêu?", "25-27 độ", "24-28 độ", "26.5 – 27.5 độ", "28.5-30 độ", "c"],
+          [199, "Lượng mưa ở phía Bắc vùng Nam Trung Bộ là:", "1200-1600mm", "1200-2000mm", "1400-2000mm", "1600-2000mm", "b"],
+          [200, "Vùng nào có đặc điểm \"Nhiệt độ cao quanh năm, nắng nhiều\"?", "Nam Trung Bộ", "Tây Nguyên", "Nam Bộ", "Cả 3 vùng trên", "c"],
+          [201, "Hạt nhân ngưng kết là gì?", "Là những khối mây tích điện", "Là các hạt nhỏ cỡ micro lơ lửng trong không khí", "Là các tia tử ngoại từ mặt trời", "Là khối lượng khí quyển dưới 20km", "b"],
+          [202, "Sương mù thành phố có hạt nhân ngưng kết là:", "Hơi nước bão hòa", "Bụi bẩn", "Tinh thể băng", "Khí Argon", "b"],
+          [203, "Sương mù bình lưu hình thành do:", "Sự lạnh đi ban đêm của mặt đất", "Không khí nóng ẩm chuyển dịch trên bề mặt lạnh", "Nhiệt độ bề mặt bốc hơi lớn hơn nhiệt độ không khí", "Các khối mây chạm nhau", "b"],
+          [204, "Độ cao của sương mù bình lưu có thể đạt tới:", "Vài mét", "Vài chục mét", "Vài trăm mét", "11 km", "c"],
+          [205, "Mây tầng nào gây mưa phùn?", "Mây tằng", "Mây trung tầng", "Mây vũ tằng", "Mây vũ tích", "a"],
+          [206, "Mây vũ tằng gây ra loại mưa nào?", "Mưa nhỏ", "Mưa lớn", "Mưa rào nhỏ", "Không cho mưa", "b"],
+          [207, "Đặc điểm của mưa dầm là:", "Hạt mưa lớn, cường độ lớn", "Mưa ngắn, đột ngột", "Hạt mưa trung bình 1-2mm, mưa lâu", "Chỉ xảy ra khi có dông", "c"],
+          [208, "Hiện tượng El NiNo xảy ra ở khu vực nào?", "Biển phía Tây Nam Mỹ", "Biển phía Đông Nam Mỹ", "Bắc Bán Cầu", "Thái Bình Dương", "b"],
+          [209, "Khí nào sau đây chiếm 0.9% trong không khí hiện đại?", "Oxy ($O_2$)", "Cacbonic ($CO_2$)", "Argon ($Ar$)", "Nitơ ($N_2$)", "c"],
+          [210, "Hệ số truyền nhiệt ($K$) của đất được tính bằng:", "Tỉ số hệ số dẫn nhiệt và nhiệt dung thể tích", "Tổng lượng nhiệt truyền xuống lớp đất", "Hiệu số giữa bức xạ mặt đất và khí quyển", "Tỉ số giữa áp suất hơi nước và bão hòa", "a"],
+          [211, "Nhiệt độ giảm 6,4 độ khi lên cao 1km ở tầng nào?", "Tầng bình lưu", "Tầng đối lưu", "Tầng trung quyển", "Tầng nhiệt quyển", "b"],
+          [212, "Ở độ cao 20-25km phía trên tầng bình lưu là nơi tập trung của:", "Hơi nước", "Khí Nitơ", "Khí Ozon ($O_3$)", "Bụi bẩn", "c"],
+          [213, "Mật độ không khí tiêu chuẩn bằng bao nhiêu $kg/m^3$?", "1", "1,293", "1,2", "2", "b"],
+          [214, "Khí trơ nào bị phân ly gây thủng tầng Ozon?", "$CO_2$", "$N_2O$", "$CFC$", "$Ar$", "b"],
+          [215, "Gió mùa đông mang đặc tính:", "Lạnh, khô", "Ẩm ướt, gây mưa", "Nóng, khô", "Nóng, ẩm", "a"],
+          [216, "Gió Tây Nam thổi từ tháng mấy?", "Tháng 10", "Tháng 5", "Tháng 4", "Tháng 6", "b"],
+          [217, "Dông nhiệt thường xảy ra do:", "Gió mùa đông tràn về", "Bức xạ mặt trời làm mặt đất nóng lên", "Áp suất khí quyển giảm mạnh", "Thủy triều dâng cao", "b"],
+          [218, "Quang quyển, sắc quyển là thành phần của:", "Trái đất", "Mặt trời", "Khí quyển", "Tầng đối lưu", "b"],
+          [219, "Đơn vị tính cường độ bức xạ mặt trời trong tài liệu là:", "$W/m^2$", "$Kcal/cm^2/tháng$", "$mmHg$", "$kg/m^3$", "b"],
+          [220, "Tổng xạ được tính bằng:", "Trực xạ + Phản xạ", "Trực xạ + Tán xạ", "Tán xạ + Phản xạ", "Bức xạ mặt đất + Bức xạ khí quyển", "b"],
+          [221, "Bức xạ bước sóng ngắn mặt trời nằm trong khoảng nào của quang phổ?", "0.39-0.76 (tia trông thấy)", "0.76-24 (tia hồng ngoại)", "0.2-0.38 (tia tử ngoại)", "Tất cả các phương án trên", "d"],
+          [222, "Phương thức truyền nhiệt nào liên quan đến gió?", "Dẫn nhiệt phân tử", "Truyền nhiệt đối lưu", "Truyền nhiệt loạn lưu", "Bức xạ nhiệt", "c"],
+          [223, "Nhiệt độ trung bình ngày được quan sát vào các giờ nào?", "1h, 7h, 13h, 19h", "6h, 12h, 18h, 24h", "7h, 19h", "12h trưa và 12h đêm", "a"],
+          [224, "Nhiệt độ tối thấp cho cây nhiệt đới là:", "$-8$ đến $-10$ độ", "3-4 độ", "0 độ", "14-18 độ", "b"],
+          [225, "Nhiệt dung của đất dùng để đánh giá:", "Lượng nhiệt đi qua một đơn vị diện tích", "Khả năng nóng lên hay lạnh đi nhanh hay chậm", "Tổng lượng hơi nước trong đất", "Độ ẩm tuyệt đối của đất", "b"],
+          [226, "Áp suất hơi nước bão hòa (E) đạt được khi:", "Nhiệt độ không khí tăng cao", "Nhiệt độ đạt đến điểm sương", "Gió thổi mạnh", "Áp suất khí quyển giảm", "b"],
+          [227, "Quá trình ngưng kết xảy ra khi áp suất hơi nước (e):", "Nhỏ hơn E", "Lớn hơn hoặc bằng E", "Bằng 0", "Bằng áp suất khí quyển", "b"],
+          [228, "Sương mù bức xạ thường xuất hiện vào thời gian nào?", "Buổi trưa mùa hè", "Buổi sáng hoặc đêm mùa xuân, thu", "Buổi chiều mùa đông", "Quanh năm", "b"],
+          [229, "Sương mù bốc hơi có đặc điểm gì?", "Rất dày, kéo dài nhiều ngày", "Rất mỏng, xuất hiện mùa thu", "Cao hàng trăm mét", "Gây mưa rào", "b"],
+          [230, "Mây tầng nào không cho mưa?", "Mây ti, mây ti tích, mây ti tầng", "Mây trung tầng", "Mây tằng tích", "Mây vũ tích", "a"],
+          [231, "Mây tích có màu gì?", "Xám", "Đen", "Trắng", "Ngũ sắc", "c"],
+          [232, "Loại mây nào gây mưa rào đột ngột?", "Mây tằng tích", "Mây vũ tích", "Mây vũ tằng", "Mây trung tầng", "b"],
+          [233, "Hiệu ứng nhà kính gây ra do sự nghẽn nhiệt bởi:", "Bức xạ sóng ngắn", "Bức xạ mặt trời", "Bức xạ mặt trăng", "Phản xạ từ mây", "b"],
+          [234, "La NiNa gây ra hiện tượng gì ở bờ biển Đông Nam Mỹ?", "Nóng lên", "Lạnh đi", "Lũ lụt", "Hạn hán", "b"],
+          [235, "Vùng N1 (Nam Trung Bộ) có lượng mưa ít nhất ở:", "Phía Bắc", "Phía Nam", "Vùng núi", "Đồng bằng", "b"],
+          [236, "Cực đại nhiệt độ của Tây Nguyên rơi vào tháng mấy?", "Tháng 6, 7", "Tháng 4, 5", "Tháng 9, 10", "Tháng 12", "b"],
+          [237, "Vùng nào có nhiệt độ tháng lạnh nhất trung bình 24-26 độ C?", "Nam Trung Bộ", "Tây Nguyên", "Nam Bộ", "Không vùng nào", "c"],
+          [238, "Hiện tượng \"Mưa cuối hè, đầu đông\" đặc trưng cho:", "Nam Trung Bộ", "Tây Nguyên", "Nam Bộ", "Cả nước", "a"],
+          [239, "Nhiệt độ trung bình năm 25-27 độ C là của vùng:", "Nam Trung Bộ", "Tây Nguyên", "Nam Bộ", "Tầng đối lưu", "a"],
+          [240, "Lượng bốc hơi 1100-1500mm là đặc điểm của:", "Nam Trung Bộ", "Tây Nguyên", "Nam Bộ", "Biển Nam Mỹ", "c"],
+          [241, "Thành phần nào của Mặt Trời nằm giữa vùng bức xạ và quang quyển?", "Lõi", "Vùng đối lưu", "Sắc quyển", "Hào quang", "b"],
+          [242, "Sắc quyển nằm ở vị trí nào trong cấu tạo Mặt Trời?", "Giữa lõi và vùng bức xạ", "Nằm ngoài quang quyển và dưới hào quang", "Nằm trong cùng của Mặt Trời", "Là lớp khí bao quanh Trái Đất", "b"],
+          [243, "Yếu tố nào sau đây được coi là dạng bức xạ mặt trời?", "Trực xạ và tán xạ", "Phản xạ $R_n$", "Bức xạ bước sóng dài mặt đất và khí quyển", "Tất cả các phương án trên", "d"],
+          [244, "Bức xạ bước sóng dài khí quyển được ký hiệu là gì?", "$E_d$", "$E_{ngh}$", "$R_n$", "$O_3$", "b"],
+          [245, "Tia tử ngoại có bước sóng tối đa là bao nhiêu micromet?", "0,38", "0,76", "24", "Vô cùng", "a"],
+          [246, "Tia hồng ngoại bắt đầu từ bước sóng nào?", "0,2", "0,39", "0,76", "24", "c"],
+          [247, "Phương thức truyền nhiệt nhờ bốc hơi và ngưng tụ là đặc điểm của:", "Truyền nhiệt trong đất", "Truyền nhiệt vào không khí", "Truyền nhiệt ở tầng bình lưu", "Truyền nhiệt ở lõi Mặt Trời", "b"],
+          [248, "Hệ số dẫn nhiệt của đất đo lường lượng nhiệt đi qua 1 đơn vị diện tích trong bao lâu?", "1 phút", "1 giây", "1 giờ", "1 ngày", "b"],
+          [249, "Đơn vị của hệ số dẫn nhiệt có chứa thông số nào sau đây?", "$cal/cm^2/cm/s/độ$", "$kg/m^3$", "$mmHg$", "$Kcal/cm^2/tháng$", "a"],
+          [250, "Nhiệt độ tối thấp của cây ôn đới so với cây nhiệt đới là:", "Cao hơn", "Thấp hơn ($-8$ đến $-10$ độ so với 3-4 độ)", "Bằng nhau", "Không thể so sánh", "b"],
+          [251, "Sương mù bức xạ thường tan đi vào lúc nào?", "Ngay khi trời tối", "Sau khi mặt trời mọc", "Khi có gió mùa đông tràn về", "Khi độ ẩm đạt 100%", "b"],
+          [252, "Độ cao của sương mù bình lưu thường đạt mức nào?", "Vài mét", "Vài chục mét", "Vài trăm mét", "150 km", "c"],
+          [253, "Sương mù hỗn hợp hình thành khi có sự pha trộn của:", "Bụi bẩn và hơi nước", "2 khối không khí khác nhau về nhiệt độ nhưng gần bão hòa", "Gió Tây và gió Đông", "Nước lỏng và tinh thể băng", "b"],
+          [254, "Loại sương mù nào xuất hiện khi nhiệt độ bề mặt bốc hơi lớn hơn nhiệt độ không khí?", "Sương mù bức xạ", "Sương mù bình lưu", "Sương mù bốc hơi", "Sương mù thành phố", "c"],
+          [255, "Mây ti có hình dạng đặc trưng là:", "Dạng nấm", "Dạng tơi sợi", "Dạng sóng", "Dạng đồng nhất màu xám", "b"],
+          [256, "Loại mây nào gây mưa phùn?", "Mây tằng", "Mây vũ tằng", "Mây vũ tích", "Mây ti tầng", "a"],
+          [257, "Mưa dầm thường có kích thước hạt mưa trung bình là:", "0,5mm", "1-2mm", "5mm", "10mm", "b"],
+          [258, "Loại mây nào cho mưa rào nhỏ và có hiện tượng ngũ sắc?", "Mây trung tầng", "Mây trung tích", "Mây ti tích", "Mây tằng tích", "b"],
+          [259, "Mây tằng tích có đặc điểm là:", "Không cho mưa", "Dạng nấm, sóng, luống và gây mưa nhỏ", "Màu đen và gây mưa lớn", "Tạo hào quang mặt trời", "b"],
+          [260, "Mưa tuyết thường xuất hiện ở dạng mưa nào?", "Mưa rào", "Mưa dầm", "Mưa phùn", "Không rơi từ mây", "b"],
+          [261, "Vùng nào có nhiệt độ tháng thấp nhất dao động từ 20-24 độ C?", "Nam Trung Bộ (N1)", "Tây Nguyên (N2)", "Nam Bộ (N3)", "Cả 3 vùng", "a"],
+          [262, "Nhiệt độ thấp nhất (cực tiểu) của vùng Nam Bộ là bao nhiêu?", "3-9 độ", "8-13 độ", "14-18 độ", "20-24 độ", "c"],
+          [263, "Lượng mưa ở Tây Nguyên tập trung nhiều nhất vào các tháng:", "9, 10, 11", "7, 8, 9", "5, 6, 7", "12, 1, 2", "b"],
+          [264, "Vùng nào có lượng bốc hơi thấp nhất trong khoảng cực tiểu (900mm)?", "Nam Trung Bộ", "Tây Nguyên", "Nam Bộ", "Tầng đối lưu", "b"],
+          [265, "Đặc điểm \"Mùa đông không lạnh\" là của vùng:", "Nam Trung Bộ", "Tây Nguyên", "Cả Nam Trung Bộ và Nam Bộ", "Chỉ Tây Nguyên", "a"],
+          [266, "Gió Tây khô nóng xuất hiện nhiều ở vùng nào?", "Nam Trung Bộ", "Tây Nguyên", "Nam Bộ", "Miền Bắc", "a"],
+          [267, "Vùng nào có lượng mưa cao nhất lên tới 2000mm?", "Nam Trung Bộ", "Tây Nguyên", "Nam Bộ", "Cả 3 vùng đều có mức cực đại này", "d"],
+          [268, "80% khối lượng khí quyển nằm ở tầng nào?", "Tầng đối lưu", "Tầng bình lưu", "Tầng trung quyển", "Tầng nhiệt quyển", "a"],
+          [269, "Khí Argon ($Ar$) chiếm tỷ lệ bao nhiêu trong khí quyển hiện đại?", "21%", "78%", "0.9%", "0.036%", "c"],
+          [270, "Mật độ không khí $1,293 kg/m^3$ được đo tại đâu?", "Trong 1 lít không khí", "Trong $1 m^3$ không khí", "Trong 1 cm không khí", "Trên bề mặt Mặt Trời", "b"],
+          [271, "Tốc độ gió biển được nhắc đến trong tài liệu là:", "Dưới 2m/s", "Trên 10m/s", "5-7m/s", "Rất mạnh", "a"],
+          [272, "Gió mùa hè thổi theo hướng nào?", "Đông Bắc", "Tây Nam", "Tây Bắc", "Đông Nam", "b"],
+          [273, "Xoáy thuận ở Bắc Bán Cầu quay theo chiều nào?", "Cùng chiều kim đồng hồ", "Ngược chiều kim đồng hồ", "Không quay", "Quay theo chiều ngang", "b"],
+          [274, "Đường đẳng áp của xoáy thuận thay đổi thế nào từ ngoài vào trong?", "Tăng dần", "Giảm dần", "Giữ nguyên", "Biến thiên theo nhiệt độ", "b"],
+          [275, "Đặc trưng của BXMT bao gồm yếu tố nào sau đây?", "Cường độ và quang phổ", "Quang chu kỳ", "Các dạng BXMT", "Tất cả các phương án trên", "d"],
+          [276, "Hằng số mặt trời được đo trong thời gian bao lâu?", "1 giây", "1 phút", "1 giờ", "1 ngày", "b"],
+          [277, "Bức xạ hữu hiệu bằng hiệu số của:", "Trực xạ và tán xạ", "$E_d$ và $E_{ngh}$", "Tổng xạ và phản xạ", "Nhiệt độ tối cao và tối thấp", "b"],
+          [278, "Quang phổ của Mặt Trời là dải sóng:", "Đứt quãng", "Liên tục từ 0 đến vô cùng", "Chỉ gồm tia trông thấy", "Chỉ gồm tia tử ngoại", "b"],
+          [279, "Truyền nhiệt loạn lưu là truyền nhiệt theo:", "Dòng nước", "Gió", "Ánh sáng", "Đất", "b"],
+          [280, "Nhiệt độ trung bình ngày là trung bình cộng của mấy lần quan sát?", "2", "4 (1h, 7h, 13h, 19h)", "12", "24", "b"],
+          [281, "Nhiệt dung của đất dùng để đánh giá:", "Độ ẩm", "Khả năng nóng lên/lạnh đi nhanh hay chậm", "Tốc độ gió trong đất", "Áp suất hơi nước bão hòa", "b"],
+          [282, "Áp suất hơi nước ($e$) có đơn vị là:", "$g/cm^3$", "$mmHg$", "$\\%$", "$kg/m^3$", "b"],
+          [283, "Độ ẩm tuyệt đối ($a$) được đo bằng đơn vị:", "$mmHg$", "$g/cm^3$ (lượng nước trong 1 đơn vị thể tích)", "$\\%$", "$Kcal$", "b"],
+          [284, "Khi $e = E$, nhiệt độ không khí được gọi là:", "Nhiệt độ tối cao", "Điểm sương", "Độ ẩm tương đối", "Nhiệt độ đẳng nhiệt", "b"],
+          [285, "Hạt nhân ngưng kết có kích thước:", "Rất lớn", "Nhỏ cỡ micro", "Bằng hạt cát", "Không thể đo được", "b"],
+          [286, "Sương muối gây hại cho cây vì:", "Nó quá nóng", "Cấu trúc trắng, xốp nhẹ và hình thành khi nhiệt độ cực thấp", "Nó làm cây bốc hơi nước nhanh", "Nó chứa nhiều muối biển", "b"],
+          [287, "Sương mù bức xạ thường có độ cao:", "Từ vài mét đến chục mét", "Hàng trăm mét", "11 km", "50 km", "a"],
+          [288, "Loại mây nào không cho mưa và có dạng tơ sợi?", "Mây ti", "Mây tằng", "Mây vũ tích", "Mây trung tầng", "a"],
+          [289, "Mây vũ tằng gây ra loại mưa nào?", "Mưa rào", "Mưa lớn", "Mưa phùn", "Không mưa", "b"],
+          [290, "Hiệu ứng nhà kính làm nhiệt độ tăng lên dưới tác động của:", "Gió", "Bức xạ mặt trời", "Độ ẩm", "El NiNo", "b"],
+          [291, "El NiNo có chu kỳ:", "Hàng năm", "4-12 năm", "100 năm", "2 năm", "b"],
+          [292, "Lượng bốc hơi ở Nam Trung Bộ (N1) là:", "500-1000mm", "1000-1600mm", "1600-2000mm", "Dưới 500mm", "b"],
+          [293, "Hạn hán ở Tây Nguyên kéo dài từ:", "Mùa hè đến mùa thu", "Nửa sau mùa đông đến đầu hè", "Quanh năm", "Chỉ tháng 12", "b"],
+          [294, "Nhiệt độ tháng cao nhất ở Nam Bộ (N3) là:", "25-27 độ", "28-29 độ", "30-32 độ", "38-40 độ", "b"],
+          [295, "Mưa ở vùng Nam Bộ nhiều nhất vào các tháng:", "5, 6, 7", "8, 9, 10", "10, 11, 12", "1, 2, 3", "b"],
+          [296, "Độ ẩm tương đối của cả 3 vùng (N1, N2, N3) đều nằm trong khoảng:", "70-80%", "78-84% (hoặc 80-84% ở N1)", "90-100%", "50-60%", "b"],
+          [297, "Tầng khí quyển nào có nhiệt độ tăng theo độ cao?", "Tầng đối lưu", "Lớp nghịch nhiệt tầng bình lưu và tầng nhiệt quyển", "Tầng trung quyển", "Tầng ngoại quyển", "b"],
+          [298, "Không khí sạch thay đổi thành phần và tính chất gây hại gọi là:", "Hiệu ứng nhà kính", "Ô nhiễm không khí", "Hiện tượng El NiNo", "Đối lưu khí quyển", "b"],
+          [299, "Gió mùa đông thổi từ tháng nào?", "Tháng 5", "Tháng 10", "Tháng 1", "Tháng 8", "b"],
+          [300, "Lượng mưa ở phía Nam vùng Nam Trung Bộ là:", "1200-2000mm", "1200-1600mm", "1400-2000mm", "1600-2000mm", "b"]
+        ];
+
+        const apiKey = ""; 
+
+        const QuizApp = () => {
+          const [currentPart, setCurrentPart] = useState(null);
+          const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+          const [score, setScore] = useState(0);
+          const [wrongScore, setWrongScore] = useState(0); 
+          const [showResult, setShowResult] = useState(false);
+          const [selectedOption, setSelectedOption] = useState(null);
+          const [isCorrect, setIsCorrect] = useState(null);
+          const [questions, setQuestions] = useState([]);
+          const [shuffledOptions, setShuffledOptions] = useState([]);
+          const [isConfirming, setIsConfirming] = useState(false); 
+          const [sessionAnswers, setSessionAnswers] = useState([]); 
+          const [reviewMode, setReviewMode] = useState(false);
+          const [reviewData, setReviewData] = useState([]); 
+          
+          const [history, setHistory] = useState(() => {
+            try {
+              const saved = localStorage.getItem('meteo_quiz_app_v4'); 
+              const parsed = saved ? JSON.parse(saved) : [];
+              return Array.isArray(parsed) ? parsed : [];
+            } catch (e) { return []; }
+          });
+
+          // MathJax rendering logic
+          useEffect(() => {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise().catch((err) => console.log(err));
+            }
+          }, [currentQuestionIndex, currentPart, reviewMode, showResult]);
+
+          const shuffleArray = (array) => {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+          };
+
+          const saveHistory = (finalScore, finalWrong, totalQuestions, partId, answers) => {
+            const newRecord = {
+              id: Date.now(),
+              date: new Date().toLocaleString('vi-VN'),
+              part: partId,
+              score: finalScore,
+              wrong: finalWrong,
+              total: totalQuestions,
+              details: answers.map(q => ({
+                id: q.id,
+                q: q.q,
+                o: q.options || [],
+                s: q.userSelected,
+                c: q.correct
+              }))
+            };
+            const updatedHistory = [newRecord, ...history];
+            setHistory(updatedHistory);
+            try {
+              localStorage.setItem('meteo_quiz_app_v4', JSON.stringify(updatedHistory));
+            } catch (e) {
+              localStorage.setItem('meteo_quiz_app_v4', JSON.stringify(updatedHistory.slice(0, 30)));
+            }
+          };
+
+          const clearHistory = () => {
+            if (window.confirm('Bạn có chắc muốn xóa toàn bộ lịch sử không?')) {
+              setHistory([]);
+              localStorage.removeItem('meteo_quiz_app_v4');
+            }
+          };
+
+          const startQuiz = (part) => {
+            const raw = FULL_DATA.filter(item => {
+                if (part === 1) return item[0] <= 30;
+                if (part === 2) return item[0] > 30 && item[0] <= 60;
+                if (part === 3) return item[0] > 60 && item[0] <= 90;
+                if (part === 4) return item[0] > 90 && item[0] <= 120;
+                if (part === 5) return item[0] > 120 && item[0] <= 150;
+                if (part === 6) return item[0] > 150 && item[0] <= 180;
+                if (part === 7) return item[0] > 180 && item[0] <= 210;
+                if (part === 8) return item[0] > 210 && item[0] <= 240;
+                if (part === 9) return item[0] > 240 && item[0] <= 270;
+                if (part === 10) return item[0] > 270;
+                return false;
+            });
+            const formatted = raw.map(item => ({
+              id: item[0],
+              q: item[1],
+              correct: item[6], 
+              options: shuffleArray([
+                { key: 'a', text: item[2] }, { key: 'b', text: item[3] }, { key: 'c', text: item[4] }, { key: 'd', text: item[5] }
+              ])
+            }));
+            setQuestions(formatted);
+            setCurrentPart(part);
+            setCurrentQuestionIndex(0);
+            setScore(0);
+            setWrongScore(0);
+            setSessionAnswers([]);
+            setShowResult(false);
+            setSelectedOption(null);
+            setIsCorrect(null);
+            if(formatted.length > 0) setShuffledOptions(formatted[0].options);
+          };
+
+          const changeQuestion = (newIndex) => {
+            setCurrentQuestionIndex(newIndex);
+            const newQ = questions[newIndex];
+            const existingAnswer = sessionAnswers.find(a => a.id === newQ.id);
+            if (existingAnswer) {
+              setShuffledOptions(existingAnswer.options);
+              setSelectedOption(existingAnswer.userSelected);
+              setIsCorrect(existingAnswer.userSelected === existingAnswer.correct);
+            } else {
+              setShuffledOptions(newQ.options);
+              setSelectedOption(null);
+              setIsCorrect(null);
+            }
+          };
+
+          const handleOptionSelect = (optionKey) => {
+            if (selectedOption) return; 
+            const currentQ = questions[currentQuestionIndex];
+            const correct = optionKey === currentQ.correct;
+            setSelectedOption(optionKey);
+            setIsCorrect(correct);
+            if (correct) setScore(s => s + 1); else setWrongScore(s => s + 1);
+            setSessionAnswers(prev => [...prev, { ...currentQ, userSelected: optionKey, options: shuffledOptions }]);
+          };
+
+          const nextQuestion = () => {
+            if (currentQuestionIndex < questions.length - 1) changeQuestion(currentQuestionIndex + 1);
+            else {
+              setShowResult(true);
+              saveHistory(score, wrongScore, questions.length, currentPart, sessionAnswers);
+            }
+          };
+
+          const prevQuestion = () => { if (currentQuestionIndex > 0) changeQuestion(currentQuestionIndex - 1); };
+
+          const requestFinish = () => setIsConfirming(true);
+          const confirmFinish = () => {
+            setShowResult(true);
+            saveHistory(score, wrongScore, questions.length, currentPart, sessionAnswers);
+            setIsConfirming(false);
+          };
+          const resetQuiz = () => { setCurrentPart(null); setQuestions([]); setReviewMode(false); };
+
+          const currentQ = questions[currentQuestionIndex];
+
+          const QuizPointLogo = () => (
+            <div className="absolute top-4 left-4 sm:top-6 sm:left-8 z-[60] animate-enter text-left">
+              <div className="glass-panel flex items-center gap-3 px-5 py-3 rounded-2xl border border-brand-200/50 shadow-lg shadow-brand-500/10">
+                <div className="bg-brand-500 text-white p-2 rounded-xl shadow-md transform hover:rotate-12 transition-transform">
+                  <Target size={24} />
+                </div>
+                <div className="flex flex-col items-start gap-0">
+                  <span className="text-sm font-black text-brand-700 leading-none tracking-tighter uppercase">QuizPoint</span>
+                  <span className="text-[11px] font-bold text-gray-400 leading-tight uppercase tracking-widest">Studio</span>
+                </div>
+              </div>
+            </div>
+          );
+          
+          if (reviewMode) {
+            return (
+              <div className="min-h-screen p-4 sm:p-6 lg:p-8 font-sans bg-gray-50/50">
+                <div className="max-w-4xl mx-auto space-y-6">
+                  <div className="glass-panel p-4 rounded-2xl shadow-sm sticky top-4 z-10 flex justify-between items-center mb-8">
+                    <button onClick={() => setReviewMode(false)} className="flex items-center gap-2 text-brand-700 hover:text-brand-900 font-semibold transition-colors"><ArrowLeft size={20} /> <span>Quay lại</span></button>
+                    <h2 className="text-xl font-bold text-gray-800 tracking-tight">Chi tiết bài làm</h2>
+                    <div className="w-8"></div> 
+                  </div>
+                  <div className="space-y-8 pb-10">
+                    {reviewData.map((item, index) => {
+                      const isItemCorrect = item.s === item.c;
+                      const options = Array.isArray(item.o) ? item.o : [];
+                      return (
+                        <div key={index} className={`bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 ${!isItemCorrect ? 'ring-1 ring-red-100' : ''}`}>
+                          <div className="flex gap-4 mb-6">
+                            <span className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-lg ${isItemCorrect ? 'bg-gradient-to-br from-emerald-400 to-emerald-600' : 'bg-gradient-to-br from-red-400 to-red-600'}`}>{index + 1}</span>
+                            <h3 className="text-lg font-semibold text-gray-800 leading-relaxed">{item.q}</h3>
+                          </div>
+                          <div className="space-y-3 pl-0 sm:pl-14">
+                            {options.map((opt, i) => {
+                              let optionClass = "p-4 rounded-xl border flex justify-between items-center ";
+                              if (opt.key === item.c) optionClass += "bg-emerald-50 border-emerald-200 text-emerald-800 font-medium shadow-sm";
+                              else if (opt.key === item.s && !isItemCorrect) optionClass += "bg-red-50 border-red-200 text-red-800 shadow-sm";
+                              else optionClass += "bg-white border-gray-100 text-gray-500 opacity-70";
+                              return (
+                                <div key={i} className={optionClass}>
+                                  <span>{opt.text}</span>
+                                  {opt.key === item.c && <CheckCircle size={20} className="text-emerald-600" />}
+                                  {opt.key === item.s && !isItemCorrect && <XCircle size={20} className="text-red-600" />}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (!currentPart) {
+            const menuItems = [
+                { id: 1, label: "Phần I: Đại cương", sub: "Câu 1 - 30", color: "emerald", icon: <Sun size={28} /> },
+                { id: 2, label: "Phần II: Khí áp & Gió", sub: "Câu 31 - 60", color: "teal", icon: <Cloud size={28} /> },
+                { id: 3, label: "Phần III: Dông & Bão", sub: "Câu 61 - 90", color: "sky", icon: <Zap size={28} /> },
+                { id: 4, label: "Phần IV: Bức xạ & MT", sub: "Câu 91 - 120", color: "blue", icon: <Presentation size={28} /> },
+                { id: 5, label: "Phần V: Nhiệt độ đất", sub: "Câu 121 - 150", color: "indigo", icon: <Layers size={28} /> },
+                { id: 6, label: "Phần VI: Độ ẩm & Bốc hơi", sub: "Câu 151 - 180", color: "emerald", icon: <Droplet size={28} /> },
+                { id: 7, label: "Phần VII: Ngưng kết & Sương", sub: "Câu 181 - 210", color: "teal", icon: <Thermometer size={28} /> },
+                { id: 8, label: "Phần VIII: Mây & Các loại mây", sub: "Câu 211 - 240", color: "sky", icon: <Cloud size={28} /> },
+                { id: 9, label: "Phần IX: Mưa & Biến đổi", sub: "Câu 241 - 270", color: "blue", icon: <Globe size={28} /> },
+                { id: 10, label: "Phần X: Khí hậu vùng miền", sub: "Câu 271 - 300", color: "indigo", icon: <Layers size={28} /> }
+            ];
+            return (
+              <div className="min-h-screen p-6 sm:p-8 flex flex-col items-center justify-center font-sans relative">
+                <QuizPointLogo />
+                <div className="w-full max-w-5xl space-y-10 animate-enter text-center mt-12 sm:mt-0">
+                  <div className="space-y-4">
+                    <div className="inline-flex p-4 rounded-full bg-white shadow-lg mb-2">
+                        <div className="bg-gradient-to-tr from-emerald-400 to-teal-500 p-3 rounded-full text-white">
+                            <Cloud size={40} />
+                        </div>
+                    </div>
+                    <h1 className="text-4xl font-bold text-gray-800 tracking-tight uppercase">Khí Tượng Nông Nghiệp</h1>
+                    
+                    <div className="flex flex-col items-center gap-1 text-gray-600 bg-white/60 py-3 px-6 rounded-2xl border border-white/80 inline-block mx-auto shadow-md">
+                        <div className="flex items-center gap-2 font-semibold text-brand-700">
+                            <User size={20} /> 
+                            <span>Tên: Nguyễn Văn Lượng</span>
+                        </div>
+                        <div className="flex items-center gap-2 font-semibold text-brand-700">
+                            <Phone size={20} /> 
+                            <span>LH: 0333738861</span>
+                        </div>
+                    </div>
+<div className="mt-6">
+    <a href="phan2.html" className="inline-flex items-center gap-2 px-8 py-3 bg-brand-500 text-white font-bold rounded-2xl hover:bg-brand-600 transition-all shadow-lg shadow-brand-200 text-sm">
+        <Sparkles size={20} /> 👉CHUYỂN SANG PHẦN 1 (148 CÂU)👈
+    </a>
+</div>
+                    <div className="bg-gradient-to-r from-brand-600 to-teal-700 text-white p-6 rounded-3xl shadow-xl max-w-3xl mx-auto border border-brand-500/30 overflow-hidden relative group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
+                            <Sparkles size={100} />
+                        </div>
+                        <div className="relative z-10 flex flex-col items-center gap-4">
+                            <div className="flex items-center gap-3">
+                                <Sparkles size={28} className="text-yellow-300 animate-pulse" />
+                                <span className="font-bold text-xl sm:text-2xl leading-tight">Nhận làm Quiz Ôn Tập & PowerPoint Cơ Bản</span>
+                            </div>
+                            <div className="flex flex-wrap justify-center gap-4 mt-2">
+                                 <div className="bg-white/20 backdrop-blur-md text-white border border-white/30 px-4 py-2 rounded-2xl flex items-center gap-2 shadow-sm">
+                                    <CheckCircle size={18} className="text-emerald-300" /> 
+                                    <span className="font-medium text-sm">Hệ thống Quiz</span>
+                                 </div>
+                                 <div className="bg-white/20 backdrop-blur-md text-white border border-white/30 px-4 py-2 rounded-2xl flex items-center gap-2 shadow-sm">
+                                    <Presentation size={18} className="text-sky-300" /> 
+                                    <span className="font-medium text-sm">Thiết kế PPT</span>
+                                 </div>
+                                 <div className="bg-white/20 backdrop-blur-md text-white border border-white/30 px-4 py-2 rounded-2xl flex items-center gap-2 shadow-sm">
+                                    <Layers size={18} className="text-orange-300" /> 
+                                    <span className="font-medium text-sm">Tài liệu học tập</span>
+                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6">
+                    {menuItems.map((item) => {
+                        const colorMap = { 
+                            emerald: "text-emerald-600 border-emerald-100/80 hover:border-emerald-400 hover:bg-emerald-50/30", 
+                            teal: "text-teal-600 border-teal-100/80 hover:border-teal-400 hover:bg-teal-50/30", 
+                            sky: "text-sky-600 border-sky-100/80 hover:border-sky-400 hover:bg-sky-50/30", 
+                            blue: "text-blue-600 border-blue-100/80 hover:border-blue-400 hover:bg-blue-50/30", 
+                            indigo: "text-indigo-600 border-indigo-100/80 hover:border-indigo-400 hover:bg-indigo-50/30" 
+                        };
+                        return (
+                            <button key={item.id} onClick={() => startQuiz(item.id)} className={`relative group p-6 rounded-2xl border-2 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl flex flex-col items-center justify-center gap-3 text-center bg-white/80 backdrop-blur-sm shadow-sm ${colorMap[item.color]}`}>
+                              <div className="p-3 rounded-xl bg-white shadow-sm group-hover:scale-110 transition-transform duration-300 ring-1 ring-gray-100 text-brand-500">{item.icon}</div>
+                              <div><div className="font-bold text-lg text-gray-800 leading-tight">{item.label}</div><div className="text-[10px] font-medium opacity-70 mt-1 uppercase tracking-wider">{item.sub}</div></div>
+                            </button>
+                        )
+                    })}
+                  </div>
+
+                  <div className="glass-panel p-6 rounded-3xl shadow-sm border border-white/50 max-w-2xl mx-auto w-full text-left">
+                    <div className="flex justify-between items-center mb-6 px-2">
+                      <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2"><History className="text-gray-400" size={20} /> Lịch sử làm bài</h2>
+                      {history.length > 0 && <button onClick={clearHistory} className="text-rose-500 hover:text-rose-700 p-2 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 size={18} /></button>}
+                    </div>
+                    {history.length === 0 ? <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">Chưa có dữ liệu bài làm</div> : (
+                      <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                        {history.map((record) => (
+                          <div key={record.id} className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4 hover:shadow-md transition-shadow">
+                            <div className="flex-1 w-full sm:w-auto">
+                              <div className="font-bold text-gray-700">Phần {record.part}</div>
+                              <div className="text-xs text-gray-400 mt-1 italic">{record.date}</div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                    <div className="text-sm font-bold"><span className="text-emerald-600">{record.score} Đ</span><span className="text-rose-500 ml-1">/ {record.wrong} S</span></div>
+                                    <div className="text-[10px] text-gray-400">/{record.total} câu</div>
+                                </div>
+                                <button onClick={() => { setReviewData(record.details || []); setReviewMode(true); }} className="p-2 bg-brand-50 text-brand-600 rounded-lg hover:bg-brand-100 transition-colors"><Eye size={18} /></button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (showResult) {
+            return (
+              <div className="min-h-screen flex items-center justify-center p-4 font-sans bg-gray-50 text-center relative">
+                <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl max-w-md w-full border border-gray-100 animate-enter">
+                  <div className="relative inline-block mb-6"><div className="absolute inset-0 bg-yellow-200 blur-xl opacity-50 rounded-full"></div><Award className="w-24 h-24 text-yellow-500 relative z-10 animate-bounce-slow" /></div>
+                  <h2 className="text-3xl font-bold mb-2 text-gray-800 tracking-tight">Hoàn Thành!</h2>
+                  <div className="grid grid-cols-2 gap-4 mb-8 mt-6">
+                    <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100"><p className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">Đúng</p><p className="text-4xl font-bold text-emerald-600">{score}</p></div>
+                    <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100"><p className="text-rose-500 text-xs font-bold uppercase tracking-wider mb-1">Sai</p><p className="text-4xl font-bold text-rose-500">{wrongScore}</p></div>
+                  </div>
+                  <button onClick={resetQuiz} className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-200 transition-all flex items-center justify-center gap-2"><RotateCcw size={20} /> Về màn hình chính</button>
+                </div>
+              </div>
+            );
+          }
+
+          const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+          return (
+            <div className="min-h-screen flex flex-col items-center p-4 sm:p-6 font-sans relative">
+              {isConfirming && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-enter">
+                  <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">Kết thúc bài?</h3>
+                    <p className="text-gray-500 mb-8">Kết quả hiện tại sẽ được lưu lại.</p>
+                    <div className="flex gap-3">
+                      <button onClick={() => setIsConfirming(false)} className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-bold transition-colors">Tiếp tục</button>
+                      <button onClick={confirmFinish} className="flex-1 py-3 px-4 bg-rose-500 text-white rounded-xl font-bold shadow-lg transition-colors">Kết thúc</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="w-full max-w-3xl flex justify-between items-center mb-6 pt-2">
+                <button onClick={requestFinish} className="p-2 rounded-xl text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-all ml-0"><LogOut size={24} /></button>
+                <div className="glass-panel px-4 py-2 rounded-full border border-white/60 shadow-sm text-xs sm:text-sm font-semibold text-gray-600 tracking-tight">Câu {currentQuestionIndex + 1} / {questions.length}</div>
+                <div className="flex items-center gap-3"><div className="flex items-center gap-1 text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-lg"><CheckCircle size={16} /> {score}</div></div>
+              </div>
+              <div className="w-full max-w-3xl mb-8">
+                <div className="h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner"><div className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-500 ease-out rounded-full" style={{ width: `${progress}%` }} /></div>
+              </div>
+              <div className="w-full max-w-3xl bg-white p-6 sm:p-10 rounded-3xl shadow-xl border border-gray-100 mb-24 relative overflow-hidden animate-enter">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+                <div className="mb-8"><span className="inline-block bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-1 rounded mb-3 tracking-wide">ID: {currentQ.id}</span><h2 className="text-xl sm:text-2xl font-bold text-gray-800 leading-normal">{currentQ.q}</h2></div>
+                <div className="space-y-3">
+                  {shuffledOptions.map((option, idx) => {
+                    let containerClass = "w-full p-5 rounded-2xl border-2 text-left transition-all duration-200 flex justify-between items-center relative overflow-hidden ";
+                    if (selectedOption) {
+                      if (option.key === currentQ.correct) containerClass += "border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-200";
+                      else if (option.key === selectedOption) containerClass += "border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-200";
+                      else containerClass += "border-gray-100 text-gray-400 opacity-60";
+                    } else containerClass += "border-gray-100 hover:border-emerald-300 hover:bg-emerald-50/50 cursor-pointer active:scale-[0.99] text-gray-600";
+                    return (
+                      <button key={idx} onClick={() => handleOptionSelect(option.key)} disabled={!!selectedOption} className={containerClass}>
+                        <span className="relative z-10 font-medium text-lg">{option.text}</span>
+                        {selectedOption && option.key === currentQ.correct && <CheckCircle className="text-emerald-600 relative z-10" size={24} />}
+                        {selectedOption && option.key === selectedOption && option.key !== currentQ.correct && <XCircle className="text-rose-600 relative z-10" size={24} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-200 flex justify-center items-center gap-4 z-20">
+                <button onClick={prevQuestion} disabled={currentQuestionIndex === 0} className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${currentQuestionIndex === 0 ? 'bg-gray-100 text-gray-300' : 'bg-white border-2 border-gray-200 text-gray-600 hover:border-gray-400'}`}><ChevronLeft size={24} /></button>
+                <button onClick={nextQuestion} disabled={!selectedOption && !sessionAnswers.some(a => a.id === currentQ.id)} className={`flex-1 max-w-md h-14 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all transform active:scale-95 ${(!selectedOption && !sessionAnswers.some(a => a.id === currentQ.id)) ? 'bg-gray-100 text-gray-400' : isCorrect ? 'bg-emerald-600 text-white shadow-emerald-200' : 'bg-gray-800 text-white shadow-gray-300'}`}>{currentQuestionIndex === questions.length - 1 ? "Xem kết quả" : "Câu tiếp theo"} <ChevronRight size={24} /></button>
+              </div>
+            </div>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<QuizApp />);
+    </script>
+</body>
+</html>
