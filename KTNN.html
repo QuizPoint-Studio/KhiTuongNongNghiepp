@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc nghiệm Khí tượng & Khí hậu - Modern UI</title>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- MathJax for LaTeX Rendering -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+        
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            200: '#a7f3d0',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        }
+                    },
+                    animation: {
+                        'bounce-slow': 'bounce 3s infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap');
+        body { 
+            font-family: 'Be Vietnam Pro', sans-serif; 
+            background: linear-gradient(135deg, #ecfdf5 0%, #f0f9ff 100%);
+            min-height: 100vh;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-enter { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- ICON COMPONENTS ---
+        const IconWrapper = ({ children, size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+        );
+
+        const CheckCircle = (props) => <IconWrapper {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconWrapper>;
+        const XCircle = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></IconWrapper>;
+        const ArrowLeft = (props) => <IconWrapper {...props}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></IconWrapper>;
+        const RotateCcw = (props) => <IconWrapper {...props}><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></IconWrapper>;
+        const Award = (props) => <IconWrapper {...props}><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></IconWrapper>;
+        const History = (props) => <IconWrapper {...props}><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></IconWrapper>;
+        const Trash2 = (props) => <IconWrapper {...props}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></IconWrapper>;
+        const LogOut = (props) => <IconWrapper {...props}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></IconWrapper>;
+        const Eye = (props) => <IconWrapper {...props}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></IconWrapper>;
+        const ChevronLeft = (props) => <IconWrapper {...props}><polyline points="15 18 9 12 15 6"/></IconWrapper>;
+        const ChevronRight = (props) => <IconWrapper {...props}><polyline points="9 18 15 12 9 6"/></IconWrapper>;
+        const Sparkles = (props) => <IconWrapper {...props}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></IconWrapper>;
+        const Sun = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/></IconWrapper>;
+        const Cloud = (props) => <IconWrapper {...props}><path d="M17.5 19c2.5 0 4.5-2 4.5-4.5 0-2-1.5-3.5-3.5-4-1-3.5-4.5-5.5-8-4.5-2.5.5-4.5 2.5-5 5-2 .5-3.5 2.5-3.5 4.5C2 17.5 4 19 6.5 19h11z"/></IconWrapper>;
+        const Droplet = (props) => <IconWrapper {...props}><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></IconWrapper>;
+        const Zap = (props) => <IconWrapper {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></IconWrapper>;
+        const Globe = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></IconWrapper>;
+        const User = (props) => <IconWrapper {...props}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></IconWrapper>;
+        const Phone = (props) => <IconWrapper {...props}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></IconWrapper>;
+        const Presentation = (props) => <IconWrapper {...props}><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></IconWrapper>;
+        const Layers = (props) => <IconWrapper {...props}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></IconWrapper>;
+        const Target = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></IconWrapper>;
+        const Thermometer = (props) => <IconWrapper {...props}><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></IconWrapper>;
+
+        // ============================================================================
+        // DỮ LIỆU CÂU HỎI (1 - 148)
+        // ============================================================================
+        const FULL_DATA = [
+          [1, "Hơi nước trong khí quyển hấp thụ bức xạ có bước sóng nào sau đây?", "0,10 – 0,15 $\\mu m$", "0,58 – 0,61 $\\mu m$; 4 – 40 $\\mu m$; 0,68 – 0,73 $\\mu m$", "100 – 150 $\\mu m$", "2,0 – 3,0 $\\mu m$", "b"],
+          [2, "Phát biểu nào sau đây là chính xác về nguồn năng lượng Mặt Trời?", "Sẽ tắt đi trong tương lai xa, tính bằng tỷ năm", "Là nguồn năng lượng vĩnh cửu không bao giờ tắt", "Sẽ tắt trong vòng 1000 năm tới", "Nguồn năng lượng này đang tăng dần vô hạn", "a"],
+          [3, "Cường độ bức xạ Mặt Trời tối thấp mà cây trồng có thể bắt đầu quang hợp được là bao nhiêu?", "0,1 – 0,2 $cal/cm^2/s$", "0,02 – 0,03 $cal/cm^2/s$", "1,0 – 1,5 $cal/cm^2/s$", "0,001 $cal/cm^2/s$", "b"],
+          [4, "Mặt đất nhận được năng lượng nào trong các dạng bức xạ Mặt Trời sau đây?", "Chỉ nhận trực xạ", "Chỉ nhận bức xạ khuếch tán", "Trực xạ và bức xạ khuếch tán", "Tia tử ngoại và tia X", "c"],
+          [5, "Dạng vật chất phổ biến nhất trên bề mặt Mặt Trời và trong không gian vũ trụ là:", "Chất khí", "Chất lỏng", "Plasma", "Chất rắn", "c"],
+          [6, "Khoảng thời gian nào có nhiệt độ không khí cao nhất trong ngày?", "11:00 – 12:00", "12:00 – 13:00", "13:00 – 14:00", "15:00 – 16:00", "c"],
+          [7, "Nhiệt độ tối thấp sinh vật học của các loại cây trồng nhiệt đới là bao nhiêu?", "$0^{\\circ}C$", "$3^{\\circ}C$ – $4^{\\circ}C$", "$10^{\\circ}C$", "$-5^{\\circ}C$", "b"],
+          [8, "Mặt đất truyền vào không khí bao nhiêu phần trăm tổng nhiệt lượng mà nó nhận được?", "10%", "37%", "50%", "75%", "b"],
+          [9, "Phương thức truyền nhiệt nào sau đây là chính yếu quyết định nhiệt độ không khí?", "Truyền nhiệt do dẫn nhiệt", "Truyền nhiệt do bức xạ nhiệt", "Truyền nhiệt do đối lưu", "Truyền nhiệt do bốc hơi", "b"],
+          [10, "Khi nhiệt độ không khí tăng lên đến $32^{\\circ}C$, hiện tượng nào xảy ra với cây trồng?", "Quang hợp tăng, hô hấp giảm", "Quá trình quang hợp giảm, hô hấp tăng", "Cả hai quá trình đều ngừng lại", "Cây phát triển mạnh nhất", "b"],
+          [11, "Ẩm độ tương đối khu vực Thủ Đức dao động trong khoảng nào?", "50 – 60%", "60 – 70%", "70 – 85%", "90 – 100%", "c"],
+          [12, "Tháng nào thường có lượng mưa nhiều nhất trong năm tại khu vực TP.HCM?", "Tháng 1 và tháng 2", "Tháng 4 và tháng 5", "Tháng 6 và tháng 9", "Tháng 11 và tháng 12", "c"],
+          [13, "Ẩm độ tuyệt đối của không khí được định nghĩa là:", "Á suất của hơi nước", "Lượng hơi nước có trong 1 đơn vị thể tích không khí", "Tỉ số hơi nước thực tế và bão hòa", "Trọng lượng của khối không khí", "b"],
+          [14, "Loại mây nào có khả năng cho mưa cao nhất?", "Mây ti", "Mây tằng", "Mây vũ tằng", "Mây ti tích", "c"],
+          [15, "Lượng mưa trung bình năm của nước ta dao động trong khoảng:", "1000 – 1500 mm", "1800 – 2200 mm", "2500 – 3000 mm", "500 – 800 mm", "b"],
+          [16, "Lưu vực sông nào sau đây có phần lãnh thổ nằm ngoài lãnh thổ Việt Nam?", "Sông Đồng Nai", "Lưu vực sông Mê Kong, sông Cả, sông Mã", "Sông Thu Bồn", "Sông Thái Bình", "b"],
+          [17, "Phương pháp phổ biến nhất để đo bốc hơi hiện nay là gì?", "Sử dụng vệ tinh", "Tính toán lý thuyết", "Sử dụng chậu bốc hơi", "Đo độ ẩm đất", "c"],
+          [18, "Lượng nước ngọt con người sử dụng cho sinh hoạt chiếm tỉ lệ bao nhiêu trên thế giới?", "3%", "1%", "0,3%", "10%", "c"],
+          [19, "Tháng nào có lượng bốc hơi cao nhất ở khu vực TP.HCM?", "Tháng 1", "Tháng 4", "Tháng 7", "Tháng 10", "b"],
+          [20, "Tháng nào có lượng bốc hơi thấp nhất ở khu vực TP.HCM?", "Tháng 4", "Tháng 6", "Tháng 12 – tháng 1", "Tháng 9", "c"],
+          [21, "Lượng bốc hơi ngày cao nhất tại khu vực TP.HCM dao động trong khoảng:", "1 – 2 mm/ngày", "3 – 4 mm/ngày", "6 – 8 mm/ngày", "10 – 12 mm/ngày", "c"],
+          [22, "Lượng bốc hơi ngày thấp nhất tại khu vực TP.HCM là bao nhiêu?", "0,5 mm/ngày", "1 – 2 mm/ngày", "3 – 4 mm/ngày", "5 – 6 mm/ngày", "c"],
+          [23, "Theo chỉ số khô hạn, khu vực được coi là \"rất ẩm\" khi có giá trị:", "$< 0,5$", "$0,5 – 1$", "$1 – 2$", "$> 4$", "a"],
+          [24, "Chỉ số khô hạn nằm trong khoảng $0,5 – 1$ được phân loại là:", "Rất ẩm", "Ẩm", "Hơi khô", "Khô", "b"],
+          [25, "Chỉ số khô hạn nằm trong khoảng $1 – 2$ được phân loại là:", "Ẩm", "Hơi khô", "Khô", "Rất khô", "b"],
+          [26, "Vùng có chỉ số khô hạn dao động từ $2 – 4$ được coi là vùng:", "Hơi khô", "Khô", "Rất khô", "Sa mạc", "b"],
+          [27, "Khi chỉ số khô hạn $> 4$, khu vực đó được phân loại là:", "Khô", "Rất khô", "Rất ẩm", "Hơi khô", "b"],
+          [28, "Lớp nghịch nhiệt, nơi có mật độ cao khí $O_3$, nằm ở độ cao nào?", "0 – 11 km", "25 – 50 km", "80 – 85 km", "Trên 100 km", "b"],
+          [29, "Độ cao trung bình của tầng đối lưu là bao nhiêu?", "5 km", "11 km", "20 km", "50 km", "b"],
+          [30, "Đặc điểm của tầng trung quyển là nằm ở độ cao:", "11 – 50 km", "80 – 85 km", "Sát mặt đất", "Trên 500 km", "b"],
+          [31, "Nhiệt độ tại tầng trung quyển dao động trong khoảng nào?", "$0^{\\circ}C – 20^{\\circ}C$", "$-20^{\\circ}C – -40^{\\circ}C$", "$-70^{\\circ}C – -80^{\\circ}C$", "Trên $100^{\\circ}C$", "c"],
+          [32, "Khí $O_3$ tập trung nhiều nhất ở tầng nào của khí quyển?", "Tầng đối lưu", "Tầng bình lưu", "Tầng trung quyển", "Tầng nhiệt", "b"],
+          [33, "Nồng độ $CO_2$ thích hợp nhất cho con người và sinh vật là:", "0,001%", "0,02 – 0,03%", "0,2%", "1%", "b"],
+          [34, "Nếu nồng độ $CO_2$ tăng lên đến bao nhiêu phần trăm thì sẽ gây độc và có thể tử vong?", "0,05%", "0,1%", "0,2%", "0,5%", "c"],
+          [35, "Tầng khí quyển nào hầu như không còn hơi nước, không khí loãng và rất ít bụi?", "Tầng đối lưu", "Tầng bình lưu", "Tầng trung quyển", "Thủy quyển", "b"],
+          [36, "Gió mùa Tây Nam thổi vào nước ta xuất phát từ:", "Thái Bình Dương", "Ấn Độ Dương", "Áp cao Xibia", "Biển Đông", "b"],
+          [37, "Gió mùa Đông Bắc thổi vào nước ta bắt nguồn từ:", "Ấn Độ Dương", "Vịnh Thái Lan", "Áp cao Xibia", "Xích đạo", "c"],
+          [38, "Tốc độ gió biển thường không vượt quá giá trị nào?", "1 m/s", "2 m/s", "5 m/s", "10 m/s", "b"],
+          [39, "Năng lượng gió lớn gấp bao nhiêu lần so với năng lượng than?", "100 lần", "1000 lần", "5000 lần", "10.000 lần", "c"],
+          [40, "Đường kính của một cơn bão thông thường dao động khoảng:", "Vài km", "Vài chục km", "Vài trăm km", "Vài nghìn km", "c"],
+          [41, "Chiều cao của một cơn bão thường nằm trong khoảng:", "1 – 2 km", "3 – 9 km", "10 – 15 km", "Trên 20 km", "b"],
+          [42, "Tốc độ di chuyển trung bình của một cơn bão là:", "5 – 10 km/h", "10 – 20 km/h", "30 – 50 km/h", "80 – 100 km/h", "b"],
+          [43, "Diện tích ảnh hưởng của một cơn bão dao động trong khoảng nào?", "100 – 200 $km^2$", "500 – 600 $km^2$", "80 – 1500 $km^2$", "2000 – 3000 $km^2$", "c"],
+          [44, "Diện tích ảnh hưởng của vùng TÂM bão thường là bao nhiêu?", "10 – 20 $km^2$", "50 – 80 $km^2$", "100 – 200 $km^2$", "500 $km^2$", "c"],
+          [45, "Bão ở nước ta thường xuất hiện chủ yếu vào các tháng nào?", "Tháng 1 – tháng 5", "Tháng 6 – tháng 11", "Tháng 12 – tháng 2 năm sau", "Chỉ xuất hiện vào tháng 10", "b"],
+          [46, "Hằng số Mặt Trời thay đổi dao động trong khoảng nào?", "500 – 800 $W/m^2$", "1000 – 1200 $W/m^2$", "1308 – 1398 $W/m^2$", "1500 – 2000 $W/m^2$", "c"],
+          [47, "Tỉ lệ thay đổi của hằng số Mặt Trời khoảng bao nhiêu phần trăm?", "1%", "3,5%", "10%", "20%", "b"],
+          [48, "Tổng bức xạ từ đất truyền vào không khí chiếm tỉ lệ:", "10%", "37%", "50%", "75%", "b"],
+          [49, "Đối với đất cát, tổng bức xạ truyền vào không khí là bao nhiêu?", "37%", "43%", "60%", "25%", "b"],
+          [50, "Tỉ lệ nhiệt lượng từ nước truyền vào không khí là:", "0,4%", "4%", "40%", "43%", "a"],
+          [51, "Mặt đất phát sinh loại bức xạ nào để truyền vào không khí?", "Bức xạ sóng ngắn", "Bức xạ sóng dài", "Tia X", "Tia Gamma", "b"],
+          [52, "Nhiệt độ trung bình ngày được đo vào 4 thời điểm nào?", "6h, 12h, 18h, 24h", "0h, 6h, 12h, 18h", "1h, 7h, 13h, 19h", "4h, 10h, 16h, 22h", "c"],
+          [53, "Nhiệt độ tối cao sinh học mà cây trồng sẽ ngưng hoạt động là:", "$30^{\\circ}C – 35^{\\circ}C$", "$45^{\\circ}C – 55^{\\circ}C$", "$60^{\\circ}C – 70^{\\circ}C$", "$100^{\\circ}C$", "b"],
+          [54, "Nếu duy trì ở mức nhiệt độ tối cao sinh học, cây trồng sẽ chết sau bao lâu?", "1 – 2 giờ", "1 – 2 ngày", "1 tuần", "Ngay lập tức", "b"],
+          [55, "Nhiệt độ tối thấp sinh học của các loại cây ôn đới là bao nhiêu?", "$0^{\\circ}C$", "$3^{\\circ}C – 4^{\\circ}C$", "$-8^{\\circ}C$ đến $-10^{\\circ}C$", "$-20^{\\circ}C$", "c"],
+          [56, "Nhiệt độ tối thấp sinh học của cây nhiệt đới là bao nhiêu?", "$0^{\\circ}C$", "$3^{\\circ}C$ – $4^{\\circ}C$", "$10^{\\circ}C$", "$-5^{\\circ}C$", "b"],
+          [57, "Ẩm độ không khí đặc trưng của vùng nhiệt đới dao động:", "60 – 70%", "75 – 85%", "30 – 40%", "90 – 100%", "b"],
+          [58, "Ẩm độ không khí đặc trưng của vùng ôn đới dao động:", "75 – 85%", "60 – 70%", "30 – 40%", "50 – 60%", "b"],
+          [59, "Ẩm độ không khí vùng sâu trong lục địa thường dao động:", "70 – 80%", "60 – 70%", "30 – 40%", "10 – 20%", "c"],
+          [60, "Đặc điểm của mây tầng cao là:", "Cao dưới 2km", "Cao trên 6km, không cho mưa, không cho bóng", "Cho lượng nước lớn kéo dài", "Có dạng nấm, màu xám", "b"],
+          [61, "Loại mây có dạng tơ sợi, cao nhất, nhẹ nhất và mỏng nhất là:", "Mây ti", "Mây ti tích", "Mây ti tầng", "Mây tằng", "a"],
+          [62, "Mây ti tích có đặc điểm là:", "Dạng tơ sợi mảnh", "Xuất hiện từng đám hoặc dải", "Báo hiệu sắp có mưa", "Có bóng râm đậm", "b"],
+          [63, "Mây ti tầng có đặc điểm:", "Hơi có kiến trúc tơ sợi, có thể sắp có mưa", "Cao dưới 2km", "Cho mưa lớn kéo dài", "Không bao giờ cho mưa", "a"],
+          [64, "Mây tầng giữa nằm ở độ cao nào?", "Dưới 2 km", "2 – 6 km", "6 – 10 km", "Trên 10 km", "b"],
+          [65, "Đặc điểm chung của mây tầng giữa là:", "Màu trắng, mỏng", "Màu xám, có khả năng cho mưa, có bóng râm", "Chỉ xuất hiện vào mùa hè", "Cao trên 10 km", "b"],
+          [66, "Loại mây ở tầng giữa có dạng sóng và gây hiện tượng tán ánh sáng ngũ sắc là:", "Mây trung tích", "Mây trung tầng", "Mây ti tầng", "Mây tằng tích", "a"],
+          [67, "Mây trung tầng (As) có đặc điểm:", "Dạng sóng", "Dạng tơ sợi, cho mưa", "Không cho bóng râm", "Màu trắng sáng", "b"],
+          [68, "Mây tầng thấp được xác định ở độ cao:", "Dưới 2 km", "2 – 5 km", "5 – 8 km", "Trên 10 km", "a"],
+          [69, "Đặc điểm của mây tằng là:", "Cho mưa lớn kéo dài", "Cho mưa phùn, xuất hiện khi mùa xuân", "Cao trên 6 km", "Có dạng sợi tơ", "b"],
+          [70, "Mây tằng tích có đặc điểm:", "Dạng sợi mảnh", "Dạng nấm, sóng hoặc luồng, cho mưa nhỏ rải rác", "Cao nhất trong các loại mây", "Che phủ toàn bộ bầu trời", "b"],
+          [71, "Loại mây nào ở tầng thấp cho mưa lớn kéo dài?", "Mây tằng", "Mây tằng tích", "Mây vũ tằng", "Mây ti tầng", "c"],
+          [72, "Thành phần nào trong hệ thống khí hậu được đánh giá là dễ bị thay đổi nhất?", "Thủy quyển", "Băng quyển", "Khí quyển", "Địa quyển", "c"],
+          [73, "Thành phần nào sau đây KHÔNG thuộc hệ thống khí hậu được nhắc đến?", "Khí quyển, Thủy quyển", "Băng quyển, Địa quyển", "Sinh quyển", "Hỏa quyển", "d"],
+          [74, "Nồng độ $CO_2$ hiện nay tương đương bao nhiêu ppm?", "280 ppm", "360 ppm", "400 ppm", "500 ppm", "b"],
+          [75, "Nồng độ $CO_2$ hiện nay chiếm bao nhiêu phần trăm trong khí quyển?", "0,02%", "0,03%", "0,3%", "3%", "b"],
+          [76, "Nồng độ $CO_2$ trước năm 1730 là bao nhiêu?", "280 ppm", "360 ppm", "200 ppm", "100 ppm", "a"],
+          [77, "Chất nào sau đây là một trong những chất gây hiệu ứng nhà kính?", "Nitơ ($N_2$)", "Oxy ($O_2$)", "$CO_2, CH_4, N_2O, O_3$", "Argon ($Ar$)", "c"],
+          [78, "CFC được sử dụng trong công nghệ nào?", "Công nghệ dệt may", "Công nghệ lạnh", "Sản xuất phân bón", "Công nghiệp thực phẩm", "b"],
+          [79, "Hiện tượng EL NINO có đặc điểm chính là:", "Mưa lớn ngập lụt", "Khô hạn kéo dài (8 – 10 tháng)", "Nhiệt độ giảm mạnh", "Chỉ xuất hiện ở Bắc Cực", "b"],
+          [80, "Chu kỳ của hiện tượng EL NINO thường là:", "1 – 2 năm", "3 – 5 năm", "6 – 8 năm", "10 – 15 năm", "c"],
+          [81, "Hiện tượng EL NINO và LA NINA được nhắc đến tại khu vực nào?", "Tây bờ biển Phi Châu", "Đông bờ biển Nam Mỹ", "Vịnh Mexico", "Biển Đông", "b"],
+          [82, "Hiện tượng LA NINA có đặc điểm thời tiết là:", "Khô hạn cực độ", "Mưa kéo dài (mưa có thể đến sớm)", "Bão tuyết bất thường", "Không có thay đổi gì", "b"],
+          [83, "Miền khí hậu phía Bắc Việt Nam có biên độ nhiệt độ năm như thế nào?", "$< 10^{\\circ}C$", "$> 10^{\\circ}C$", "$= 5^{\\circ}C$", "$< 5^{\\circ}C$", "b"],
+          [84, "Miền khí hậu phía Nam Việt Nam có biên độ nhiệt độ năm là:", "$< 10^{\\circ}C$", "$> 10^{\\circ}C$", "$> 15^{\\circ}C$", "$= 20^{\\circ}C$", "a"],
+          [85, "Chỉ số bức xạ của miền Bắc Việt Nam được xác định là:", "$> 140 kcal/cm^2$", "$< 140 kcal/cm^2$", "$> 200 kcal/cm^2$", "$< 100 kcal/cm^2$", "b"],
+          [86, "Chỉ số số giờ nắng của miền Nam Việt Nam là bao nhiêu?", "$< 2000$ giờ", "$> 2000$ giờ", "$< 1500$ giờ", "$> 3000$ giờ", "b"],
+          [87, "Ranh giới chia hai miền khí hậu nước ta nằm ở vĩ độ 16, thuộc tỉnh nào?", "Quảng Nam", "Quảng Bình", "Thừa Thiên Huế", "Đà Nẵng", "b"],
+          [88, "Vì sao nhiệt độ Đà Lạt ban trưa hiện nay dao động mức $25^{\\circ}C – 28^{\\circ}C$?", "Do hiện tượng biến đổi khí hậu", "Do diện tích nhà màn tăng lên", "Do dân số tăng nhanh", "Do hiệu ứng đảo nhiệt đô thị", "b"],
+          [89, "Nhóm cây rau thường chứa hàm lượng nước chiếm tỉ lệ bao nhiêu?", "50%", "70%", "$> 90%$", "100%", "c"],
+          [90, "Nhóm cây dài ngày chứa hàm lượng nước là:", "50%", "70%", "90%", "30%", "b"],
+          [91, "Khi cơ thể mất đi 2% nước, khả năng làm việc giảm bao nhiêu?", "10%", "20%", "50%", "5%", "b"],
+          [92, "Hiện tượng \"tự đầu độc\" xảy ra khi cơ thể mất đi:", "5% nước", "10% nước", "15% nước", "2% nước", "b"],
+          [93, "Tỉ lệ nước mất đi bao nhiêu sẽ dẫn đến tử vong?", "10%", "15%", "21%", "50%", "c"],
+          [94, "Diện tích nước bao phủ trên bề mặt Trái Đất chiếm tỉ lệ bao nhiêu?", "1/4 diện tích", "1/2 diện tích", "3/4 diện tích", "Toàn bộ bề mặt", "c"],
+          [95, "Trong tổng lượng nước trên Trái Đất, tỉ lệ nước mặn chiếm bao nhiêu phần trăm?", "3%", "70%", "90%", "97%", "d"],
+          [96, "Tỉ lệ nước ngọt trên Trái Đất được ghi nhận trong tài liệu là bao nhiêu?", "3%", "10%", "21%", "97%", "a"],
+          [97, "Tỉ lệ nước tồn tại dưới dạng băng tuyết chiếm bao nhiêu?", "0,3%", "50%", "90%", "99,7%", "d"],
+          [98, "Tỉ lệ nước ngọt thực tế mà con người có thể sử dụng được là bao nhiêu?", "3%", "0,3%", "99,7%", "1%", "b"],
+          // CÂU HỎI MỚI (99 - 148)
+          [99, "Nhiệt độ trung bình của tầng khí quyển ở độ cao 11 – 25 km là:", "$-45^{\\circ}C$", "$-55^{\\circ}C$", "$-60^{\\circ}C$", "$-30^{\\circ}C$", "b"],
+          [100, "Thành phần hơi nước trong bầu khí quyển thời kỳ nguyên thủy chiếm tỉ lệ:", "10 – 15%", "30 – 40%", "60 – 70%", "8 – 10%", "c"],
+          [101, "Ở độ cao nào thì bầu khí quyển được coi là không còn hơi nước nữa?", "5 – 10 km", "10 – 15 km", "20 – 25 km", "Trên 50 km", "b"],
+          [102, "Diện tích ảnh hưởng của những siêu bão có thể lên đến:", "500 – 800 $km^2$", "800 – 1500 $km^2$", "2000 $km^2$", "100 – 200 $km^2$", "b"],
+          [103, "Các hiện tượng thời tiết như mưa, gió, bão, mây chỉ quan sát được ở tầng khí quyển:", "0 – 12 km", "12 – 25 km", "25 – 55 km", "Trên 80 km", "a"],
+          [104, "Khoảng thời gian nhiệt độ nóng nhất trong năm tại TP.HCM là:", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "b"],
+          [105, "Hiện tượng cực quang có thể quan sát được ở đâu?", "Xích đạo", "Các vùng nội địa", "Bắc cực hoặc Nam cực", "Tầng đối lưu", "c"],
+          [106, "Gió mùa Đông ở nước ta bắt đầu thổi từ thời điểm nào?", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "c"],
+          [107, "Hiện tượng sương mù chỉ xuất hiện ở tầng khí quyển nào?", "0 – 300 m", "300 – 1000 m", "11 – 55 km", "10 – 15 km", "a"],
+          [108, "Khí Ozon ($O_3$) tập trung chủ yếu ở tầng khí quyển nào?", "0 – 11 km", "11 – 25 km", "25 – 55 km", "Trên 80 km", "c"],
+          [109, "Gió mùa Hè ở nước ta bắt đầu thổi từ:", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "b"],
+          [110, "Độ cao khí quyển nào được coi như không còn không khí nữa?", "100 km", "120 km", "150 km", "200 km", "c"],
+          [111, "Biến thiên ẩm độ tuyệt đối của không khí trong đất liền có đặc điểm:", "Cao nhất lúc 18:00", "Có hai cực đại (8 – 9h và 6h tối) và hai cực tiểu (14 – 15h và 5 – 6h sáng)", "Thấp nhất lúc 14 – 15h", "Chỉ có một cực đại duy nhất", "b"],
+          [112, "Mây tầng cao hình thành ở độ cao:", "2000 – 4000 m", "4000 – 6000 m", "6000 – 8000 m", "Trên 10000 m", "c"],
+          [113, "Nếu nhiệt độ mặt đất là $30^{\\circ}C$, ở độ cao 5000m nhiệt độ không khí là bao nhiêu?", "$0^{\\circ}C$", "$-2^{\\circ}C$", "$-5^{\\circ}C$", "$4^{\\circ}C$", "b"],
+          [114, "Nhiệt độ TỐI CAO sinh vật học của cây trồng nhiệt đới là:", "$35^{\\circ}C – 45^{\\circ}C$", "$45^{\\circ}C – 55^{\\circ}C$", "$55^{\\circ}C – 65^{\\circ}C$", "Trên $70^{\\circ}C$", "b"],
+          [115, "Nhiệt độ trung bình ngày là giá trị trung bình của 4 thời điểm nào?", "0:00, 6:00, 12:00, 18:00", "1:00, 7:00, 13:00, 19:00", "4:00, 10:00, 16:00, 22:00", "2:00, 8:00, 14:00, 20:00", "b"],
+          [116, "Nhiệt độ của tầng nhiệt quyển ở độ cao 200km là:", "$200^{\\circ}C$", "$400^{\\circ}C$", "$600^{\\circ}C$", "$800^{\\circ}C$", "c"],
+          [117, "Thành phần vật chất cấu tạo của Mặt trời ở trạng thái plasma gồm:", "Hydro, Heli, Nitơ", "Hydro, Heli, Oxy", "Hydro, Heli, Các-bon", "Heli, Oxy, Nitơ", "b"],
+          [118, "Trong các cơn bão, gió cấp 10 có tốc độ tương đương:", "$70 – 80 km/h$", "$89 – 102 km/h$", "$103 – 117 km/h$", "Trên $120 km/h$", "b"],
+          [119, "Đặc điểm của gió địa phương có hướng di chuyển đảo chiều theo:", "Giờ", "Ngày", "Tháng", "Dăm", "b"],
+          [120, "Áp suất ở đỉnh tầng đối lưu (độ cao 11 km) là bao nhiêu?", "100 mbar", "200 mbar", "500 mbar", "700 mbar", "b"],
+          [121, "Nồng độ $CO_2$ ở ngưỡng gây độc đối với sự sống sinh vật là:", "$> 0,03\%$", "$> 0,1\%$", "$> 0,2\%$", "$> 0,5\%$", "c"],
+          [122, "Nhiệt độ lớp khí quyển sát mặt đất được quyết định chủ yếu bởi:", "Bức xạ trực xạ", "Bức xạ khuếch tán", "Bức xạ sóng dài mặt đất", "Bức xạ phản xạ", "c"],
+          [123, "Tốc độ di chuyển trung bình của tâm bão là:", "$5 – 10 km/h$", "$10 – 20 km/h$", "$20 – 30 km/h$", "$40 – 50 km/h$", "b"],
+          [124, "Thành phần $CO_2$ trong bầu khí quyển thời kỳ nguyên thủy chiếm tỉ lệ:", "1 – 2%", "5 – 10%", "10 – 15%", "20 – 30%", "c"],
+          [125, "Nhiệt độ ở đỉnh tầng đối lưu (11 km) được ghi nhận là:", "$-50^{\\circ}C$", "$-55^{\\circ}C$", "$-60^{\\circ}C$", "$-65^{\\circ}C$", "c"],
+          [126, "Cứ lên cao 1000m thì cường độ trực xạ Mặt trời tăng lên:", "0,05 $cal/cm^2/giây$", "0,1 – 0,2 $cal/cm^2/giây$", "0,5 $cal/cm^2/giây$", "1,0 $cal/cm^2/giây$", "b"],
+          [127, "Vùng khí hậu có tổng nhiệt độ trung bình từ $8000^{\\circ}C – 9000^{\\circ}C$ được xếp vào loại:", "Nóng trung bình", "Nóng", "Rất nóng", "Nóng ít", "c"],
+          [128, "Biến thiên nhiệt độ không khí ngày và đêm phụ thuộc vào yếu tố nào?", "Lượng mây", "Vị trí tương đối giữa biển và lục địa", "Địa hình lồi lõm", "Tất cả các phương án trên đều đúng", "d"],
+          [129, "Ẩm độ tương đối khu vực Thủ Đức dao động trong khoảng:", "60 – 70%", "70 – 85%", "85 – 95%", "Trên 95%", "b"],
+          [130, "Khoảng cách trung bình từ tâm Mặt trời đến Trái đất là:", "147 triệu km", "149,6 triệu km", "151 triệu km", "152 triệu km", "b"],
+          [131, "Hiện tượng dông ở nước ta thường xuất hiện trong khoảng thời gian:", "Tháng 1 – 4", "Tháng 4 – 8", "Tháng 9 – 12", "Quanh năm", "b"],
+          [132, "Độ cao của tầng bình lưu nằm trong khoảng:", "0 – 11 km", "11 – 55 km", "55 – 80 km", "Trên 80 km", "b"],
+          [133, "Gió đất – gió biển và gió thung lũng có tốc độ gió thông thường:", "$< 2 m/s$", "$2 – 5 m/s$", "$5 – 10 m/s$", "$> 10 m/s$", "b"],
+          [134, "Điều kiện độ sâu và nhiệt độ nước biển để hình thành bão ngoài khơi là:", "30m ở $25^{\\circ}C$", "50m ở $26,6^{\\circ}C$", "100m ở $28^{\\circ}C$", "20m ở $26^{\\circ}C$", "b"],
+          [135, "Thành phần $N_2$ trong bầu khí quyển thời kỳ nguyên thủy chiếm tỉ lệ:", "78%", "60%", "8 – 10%", "21%", "c"],
+          [136, "Hiện tượng bão KHÔNG xuất hiện ở độ cao khí quyển nào?", "$< 5 km$", "$5 – 10 km$", "$> 12 km$", "Sát mặt đất", "c"],
+          [137, "Lượng hơi nước tập trung ở tầng đối lưu chiếm bao nhiêu phần trăm?", "50%", "75%", "80%", "90%", "d"],
+          [138, "Tại tâm Mặt trời, lượng hydro tiêu hao mỗi giây là:", "1 tấn", "4 tấn", "10 tấn", "100 tấn", "b"],
+          [139, "Dạng bức xạ Mặt trời nào có cường độ lớn nhất khi vào khí quyển?", "Bức xạ phản xạ", "Bức xạ khuếch tán", "Bức xạ trực xạ", "Bức xạ sóng dài", "c"],
+          [140, "Trong sơ đồ nguyên nhân gây ra gió, \"Chênh lệch nhiệt độ\" tương ứng với vị trí:", "Điểm A", "Điểm B", "Điểm C", "Điểm D", "a"],
+          [141, "Trong sơ đồ gió, vị trí \"D\" đại diện cho yếu tố nào?", "Nhiệt độ cao", "Nhiệt độ thấp", "Khí áp cao", "Khí áp thấp", "b"],
+          [142, "Điểm \"E\" trong sơ đồ nguyên nhân gây gió đại diện cho:", "Nhiệt độ cao", "Nhiệt độ thấp", "Khí áp cao", "Khí áp thấp", "a"],
+          [143, "Điểm \"F\" trong sơ đồ nguyên nhân gây gió đại diện cho:", "Nhiệt độ cao", "Khí áp thấp", "Khí áp cao", "Gió", "c"],
+          [144, "Điểm \"G\" trong sơ đồ nguyên nhân gây gió đại diện cho:", "Nhiệt độ cao", "Nhiệt độ thấp", "Khí áp cao", "Khí áp thấp", "d"],
+          [145, "Trong sơ đồ, thành phần \"H\" mô tả quy luật nào?", "Gió thổi từ nơi nhiệt độ cao đến thấp", "Gió thổi từ nơi khí áp cao đến khí áp thấp", "Nhiệt độ thấp gây ra khí áp thấp", "Nhiệt độ cao gây ra khí áp cao", "b"],
+          [146, "Nguyên nhân trực tiếp tạo ra \"Gió\" (vị trí C) trong sơ đồ là:", "Chênh lệch nhiệt độ", "Chênh lệch khí áp", "Nhiệt độ cao", "Khí áp thấp", "b"],
+          [147, "\"Chênh lệch khí áp\" trong sơ đồ tương ứng với vị trí:", "Điểm A", "Điểm B", "Điểm C", "Điểm E", "b"],
+          [148, "Xoáy thuận nhiệt đới có tâm di chuyển $10 – 20 km/h$ được gọi là:", "Áp thấp nhiệt đới", "Bão", "Gió mùa", "Dông", "b"]
+        ];
+
+        const apiKey = ""; 
+
+        const QuizApp = () => {
+          const [currentPart, setCurrentPart] = useState(null);
+          const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+          const [score, setScore] = useState(0);
+          const [wrongScore, setWrongScore] = useState(0); 
+          const [showResult, setShowResult] = useState(false);
+          const [selectedOption, setSelectedOption] = useState(null);
+          const [isCorrect, setIsCorrect] = useState(null);
+          const [questions, setQuestions] = useState([]);
+          const [shuffledOptions, setShuffledOptions] = useState([]);
+          const [isConfirming, setIsConfirming] = useState(false); 
+          const [sessionAnswers, setSessionAnswers] = useState([]); 
+          const [reviewMode, setReviewMode] = useState(false);
+          const [reviewData, setReviewData] = useState([]); 
+          
+          const [history, setHistory] = useState(() => {
+            try {
+              const saved = localStorage.getItem('meteo_quiz_app_v3'); 
+              const parsed = saved ? JSON.parse(saved) : [];
+              return Array.isArray(parsed) ? parsed : [];
+            } catch (e) { return []; }
+          });
+
+          useEffect(() => {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise().catch((err) => console.log(err));
+            }
+          }, [currentQuestionIndex, currentPart, reviewMode, showResult]);
+
+          const shuffleArray = (array) => {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+          };
+
+          const saveHistory = (finalScore, finalWrong, totalQuestions, partId, answers) => {
+            const newRecord = {
+              id: Date.now(),
+              date: new Date().toLocaleString('vi-VN'),
+              part: partId,
+              score: finalScore,
+              wrong: finalWrong,
+              total: totalQuestions,
+              details: answers.map(q => ({
+                id: q.id,
+                q: q.q,
+                o: q.options || [],
+                s: q.userSelected,
+                c: q.correct
+              }))
+            };
+            const updatedHistory = [newRecord, ...history];
+            setHistory(updatedHistory);
+            try {
+              localStorage.setItem('meteo_quiz_app_v3', JSON.stringify(updatedHistory));
+            } catch (e) {
+              localStorage.setItem('meteo_quiz_app_v3', JSON.stringify(updatedHistory.slice(0, 30)));
+            }
+          };
+
+          const clearHistory = () => {
+            if (window.confirm('Bạn có chắc muốn xóa toàn bộ lịch sử không?')) {
+              setHistory([]);
+              localStorage.removeItem('meteo_quiz_app_v3');
+            }
+          };
+
+          const startQuiz = (part) => {
+            const raw = FULL_DATA.filter(item => {
+                if (part === 1) return item[0] <= 30;
+                if (part === 2) return item[0] > 30 && item[0] <= 60;
+                if (part === 3) return item[0] > 60 && item[0] <= 90;
+                if (part === 4) return item[0] > 90 && item[0] <= 120;
+                if (part === 5) return item[0] > 120;
+                return false;
+            });
+            const formatted = raw.map(item => ({
+              id: item[0],
+              q: item[1],
+              correct: item[6], 
+              options: shuffleArray([
+                { key: 'a', text: item[2] }, { key: 'b', text: item[3] }, { key: 'c', text: item[4] }, { key: 'd', text: item[5] }
+              ])
+            }));
+            setQuestions(formatted);
+            setCurrentPart(part);
+            setCurrentQuestionIndex(0);
+            setScore(0);
+            setWrongScore(0);
+            setSessionAnswers([]);
+            setShowResult(false);
+            setSelectedOption(null);
+            setIsCorrect(null);
+            if(formatted.length > 0) setShuffledOptions(formatted[0].options);
+          };
+
+          const changeQuestion = (newIndex) => {
+            setCurrentQuestionIndex(newIndex);
+            const newQ = questions[newIndex];
+            const existingAnswer = sessionAnswers.find(a => a.id === newQ.id);
+            if (existingAnswer) {
+              setShuffledOptions(existingAnswer.options);
+              setSelectedOption(existingAnswer.userSelected);
+              setIsCorrect(existingAnswer.userSelected === existingAnswer.correct);
+            } else {
+              setShuffledOptions(newQ.options);
+              setSelectedOption(null);
+              setIsCorrect(null);
+            }
+          };
+
+          const handleOptionSelect = (optionKey) => {
+            if (selectedOption) return; 
+            const currentQ = questions[currentQuestionIndex];
+            const correct = optionKey === currentQ.correct;
+            setSelectedOption(optionKey);
+            setIsCorrect(correct);
+            if (correct) setScore(s => s + 1); else setWrongScore(s => s + 1);
+            setSessionAnswers(prev => [...prev, { ...currentQ, userSelected: optionKey, options: shuffledOptions }]);
+          };
+
+          const nextQuestion = () => {
+            if (currentQuestionIndex < questions.length - 1) changeQuestion(currentQuestionIndex + 1);
+            else {
+              setShowResult(true);
+              saveHistory(score, wrongScore, questions.length, currentPart, sessionAnswers);
+            }
+          };
+
+          const prevQuestion = () => { if (currentQuestionIndex > 0) changeQuestion(currentQuestionIndex - 1); };
+
+          const requestFinish = () => setIsConfirming(true);
+          const confirmFinish = () => {
+            setShowResult(true);
+            saveHistory(score, wrongScore, questions.length, currentPart, sessionAnswers);
+            setIsConfirming(false);
+          };
+          const resetQuiz = () => { setCurrentPart(null); setQuestions([]); setReviewMode(false); };
+
+          const currentQ = questions[currentQuestionIndex];
+
+          const QuizPointLogo = () => (
+            <div className="absolute top-4 left-4 sm:top-6 sm:left-8 z-[60] animate-enter text-left">
+              <div className="glass-panel flex items-center gap-3 px-5 py-3 rounded-2xl border border-brand-200/50 shadow-lg shadow-brand-500/10">
+                <div className="bg-brand-500 text-white p-2 rounded-xl shadow-md transform hover:rotate-12 transition-transform">
+                  <Target size={24} />
+                </div>
+                <div className="flex flex-col items-start gap-0">
+                  <span className="text-sm font-black text-brand-700 leading-none tracking-tighter uppercase">QuizPoint</span>
+                  <span className="text-[11px] font-bold text-gray-400 leading-tight uppercase tracking-widest">Studio</span>
+                </div>
+              </div>
+            </div>
+          );
+          
+          if (reviewMode) {
+            return (
+              <div className="min-h-screen p-4 sm:p-6 lg:p-8 font-sans bg-gray-50/50">
+                <div className="max-w-4xl mx-auto space-y-6">
+                  <div className="glass-panel p-4 rounded-2xl shadow-sm sticky top-4 z-10 flex justify-between items-center mb-8">
+                    <button onClick={() => setReviewMode(false)} className="flex items-center gap-2 text-brand-700 hover:text-brand-900 font-semibold transition-colors"><ArrowLeft size={20} /> <span>Quay lại</span></button>
+                    <h2 className="text-xl font-bold text-gray-800 tracking-tight">Chi tiết bài làm</h2>
+                    <div className="w-8"></div> 
+                  </div>
+                  <div className="space-y-8 pb-10">
+                    {reviewData.map((item, index) => {
+                      const isItemCorrect = item.s === item.c;
+                      const options = Array.isArray(item.o) ? item.o : [];
+                      return (
+                        <div key={index} className={`bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 ${!isItemCorrect ? 'ring-1 ring-red-100' : ''}`}>
+                          <div className="flex gap-4 mb-6">
+                            <span className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-lg ${isItemCorrect ? 'bg-gradient-to-br from-emerald-400 to-emerald-600' : 'bg-gradient-to-br from-red-400 to-red-600'}`}>{index + 1}</span>
+                            <h3 className="text-lg font-semibold text-gray-800 leading-relaxed">{item.q}</h3>
+                          </div>
+                          <div className="space-y-3 pl-0 sm:pl-14">
+                            {options.map((opt, i) => {
+                              let optionClass = "p-4 rounded-xl border flex justify-between items-center ";
+                              if (opt.key === item.c) optionClass += "bg-emerald-50 border-emerald-200 text-emerald-800 font-medium shadow-sm";
+                              else if (opt.key === item.s && !isItemCorrect) optionClass += "bg-red-50 border-red-200 text-red-800 shadow-sm";
+                              else optionClass += "bg-white border-gray-100 text-gray-500 opacity-70";
+                              return (
+                                <div key={i} className={optionClass}>
+                                  <span>{opt.text}</span>
+                                  {opt.key === item.c && <CheckCircle size={20} className="text-emerald-600" />}
+                                  {opt.key === item.s && !isItemCorrect && <XCircle size={20} className="text-red-600" />}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (!currentPart) {
+            const menuItems = [
+                { id: 1, label: "Khí tượng Học I", sub: "Câu 1 - 30", color: "emerald", icon: <Sun size={28} /> },
+                { id: 2, label: "Khí tượng Học II", sub: "Câu 31 - 60", color: "teal", icon: <Cloud size={28} /> },
+                { id: 3, label: "Độ ẩm & Các Loại Mây", sub: "Câu 61 - 90", color: "sky", icon: <Droplet size={28} /> },
+                { id: 4, label: "Tài nguyên & Bão", sub: "Câu 91 - 120", color: "blue", icon: <Zap size={28} /> },
+                { id: 5, label: "Khí quyển & Gió", sub: "Câu 121 - 148", color: "indigo", icon: <Globe size={28} /> }
+            ];
+            return (
+              <div className="min-h-screen p-6 sm:p-8 flex flex-col items-center justify-center font-sans relative">
+                <QuizPointLogo />
+                <div className="w-full max-w-5xl space-y-10 animate-enter text-center mt-12 sm:mt-0">
+                  <div className="space-y-4">
+                    <div className="inline-flex p-4 rounded-full bg-white shadow-lg mb-2">
+                        <div className="bg-gradient-to-tr from-emerald-400 to-teal-500 p-3 rounded-full text-white">
+                            <Cloud size={40} />
+                        </div>
+                    </div>
+                    <h1 className="text-4xl font-bold text-gray-800 tracking-tight uppercase">Khí Tượng Nông Nghiệp</h1>
+                    
+                    <div className="flex flex-col items-center gap-1 text-gray-600 bg-white/60 py-3 px-6 rounded-2xl border border-white/80 inline-block mx-auto shadow-md">
+                        <div className="flex items-center gap-2 font-semibold text-brand-700">
+                            <User size={20} /> 
+                            <span>Tên: Nguyễn Văn Lượng</span>
+                        </div>
+                        <div className="flex items-center gap-2 font-semibold text-brand-700">
+                            <Phone size={20} /> 
+                            <span>LH: 0333738861</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-gradient-to-r from-brand-600 to-teal-700 text-white p-6 rounded-3xl shadow-xl max-w-3xl mx-auto border border-brand-500/30 overflow-hidden relative group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
+                            <Sparkles size={100} />
+                        </div>
+                        <div className="relative z-10 flex flex-col items-center gap-4">
+                            <div className="flex items-center gap-3">
+                                <Sparkles size={28} className="text-yellow-300 animate-pulse" />
+                                <span className="font-bold text-xl sm:text-2xl leading-tight">Nhận làm Quiz Ôn Tập & PowerPoint Cơ Bản</span>
+                            </div>
+                            <div className="flex flex-wrap justify-center gap-4 mt-2">
+                                 <div className="bg-white/20 backdrop-blur-md text-white border border-white/30 px-4 py-2 rounded-2xl flex items-center gap-2 shadow-sm">
+                                    <CheckCircle size={18} className="text-emerald-300" /> 
+                                    <span className="font-medium text-sm">Hệ thống Quiz</span>
+                                 </div>
+                                 <div className="bg-white/20 backdrop-blur-md text-white border border-white/30 px-4 py-2 rounded-2xl flex items-center gap-2 shadow-sm">
+                                    <Presentation size={18} className="text-sky-300" /> 
+                                    <span className="font-medium text-sm">Thiết kế PPT</span>
+                                 </div>
+                                 <div className="bg-white/20 backdrop-blur-md text-white border border-white/30 px-4 py-2 rounded-2xl flex items-center gap-2 shadow-sm">
+                                    <Layers size={18} className="text-orange-300" /> 
+                                    <span className="font-medium text-sm">Tài liệu học tập</span>
+                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6">
+                    {menuItems.map((item) => {
+                        const colorMap = { 
+                            emerald: "text-emerald-600 border-emerald-100/80 hover:border-emerald-400 hover:bg-emerald-50/30", 
+                            teal: "text-teal-600 border-teal-100/80 hover:border-teal-400 hover:bg-teal-50/30", 
+                            sky: "text-sky-600 border-sky-100/80 hover:border-sky-400 hover:bg-sky-50/30", 
+                            blue: "text-blue-600 border-blue-100/80 hover:border-blue-400 hover:bg-blue-50/30", 
+                            indigo: "text-indigo-600 border-indigo-100/80 hover:border-indigo-400 hover:bg-indigo-50/30" 
+                        };
+                        return (
+                            <button key={item.id} onClick={() => startQuiz(item.id)} className={`relative group p-6 rounded-2xl border-2 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl flex flex-col items-center justify-center gap-3 text-center bg-white/80 backdrop-blur-sm shadow-sm ${colorMap[item.color]}`}>
+                              <div className="p-3 rounded-xl bg-white shadow-sm group-hover:scale-110 transition-transform duration-300 ring-1 ring-gray-100 text-brand-500">{item.icon}</div>
+                              <div><div className="font-bold text-lg text-gray-800">{item.label}</div><div className="text-xs font-medium opacity-70 mt-1">{item.sub}</div></div>
+                            </button>
+                        )
+                    })}
+                  </div>
+
+                  <div className="glass-panel p-6 rounded-3xl shadow-sm border border-white/50 max-w-2xl mx-auto w-full text-left">
+                    <div className="flex justify-between items-center mb-6 px-2">
+                      <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2"><History className="text-gray-400" size={20} /> Lịch sử</h2>
+                      {history.length > 0 && <button onClick={clearHistory} className="text-rose-500 hover:text-rose-700 p-2 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 size={18} /></button>}
+                    </div>
+                    {history.length === 0 ? <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">Chưa có dữ liệu bài làm</div> : (
+                      <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                        {history.map((record) => (
+                          <div key={record.id} className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4 hover:shadow-md transition-shadow">
+                            <div className="flex-1 w-full sm:w-auto">
+                              <div className="font-bold text-gray-700">Phần {record.part}</div>
+                              <div className="text-xs text-gray-400 mt-1 italic">{record.date}</div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                    <div className="text-sm font-bold"><span className="text-emerald-600">{record.score} Đ</span><span className="text-rose-500 ml-1">/ {record.wrong} S</span></div>
+                                    <div className="text-[10px] text-gray-400">/{record.total} câu</div>
+                                </div>
+                                <button onClick={() => { setReviewData(record.details || []); setReviewMode(true); }} className="p-2 bg-brand-50 text-brand-600 rounded-lg hover:bg-brand-100 transition-colors"><Eye size={18} /></button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (showResult) {
+            return (
+              <div className="min-h-screen flex items-center justify-center p-4 font-sans bg-gray-50 text-center relative">
+                <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl max-w-md w-full border border-gray-100 animate-enter">
+                  <div className="relative inline-block mb-6"><div className="absolute inset-0 bg-yellow-200 blur-xl opacity-50 rounded-full"></div><Award className="w-24 h-24 text-yellow-500 relative z-10 animate-bounce-slow" /></div>
+                  <h2 className="text-3xl font-bold mb-2 text-gray-800 tracking-tight">Hoàn Thành!</h2>
+                  <div className="grid grid-cols-2 gap-4 mb-8 mt-6">
+                    <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100"><p className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">Đúng</p><p className="text-4xl font-bold text-emerald-600">{score}</p></div>
+                    <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100"><p className="text-rose-500 text-xs font-bold uppercase tracking-wider mb-1">Sai</p><p className="text-4xl font-bold text-rose-500">{wrongScore}</p></div>
+                  </div>
+                  <button onClick={resetQuiz} className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-200 transition-all flex items-center justify-center gap-2"><RotateCcw size={20} /> Về màn hình chính</button>
+                </div>
+              </div>
+            );
+          }
+
+          const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+          return (
+            <div className="min-h-screen flex flex-col items-center p-4 sm:p-6 font-sans relative">
+              {isConfirming && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-enter">
+                  <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">Kết thúc bài?</h3>
+                    <p className="text-gray-500 mb-8">Kết quả hiện tại sẽ được lưu lại.</p>
+                    <div className="flex gap-3">
+                      <button onClick={() => setIsConfirming(false)} className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-bold transition-colors">Tiếp tục</button>
+                      <button onClick={confirmFinish} className="flex-1 py-3 px-4 bg-rose-500 text-white rounded-xl font-bold shadow-lg transition-colors">Kết thúc</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="w-full max-w-3xl flex justify-between items-center mb-6 pt-2">
+                <button onClick={requestFinish} className="p-2 rounded-xl text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-all ml-0"><LogOut size={24} /></button>
+                <div className="glass-panel px-4 py-2 rounded-full border border-white/60 shadow-sm text-xs sm:text-sm font-semibold text-gray-600 tracking-tight">Câu {currentQuestionIndex + 1} / {questions.length}</div>
+                <div className="flex items-center gap-3"><div className="flex items-center gap-1 text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-lg"><CheckCircle size={16} /> {score}</div></div>
+              </div>
+              <div className="w-full max-w-3xl mb-8">
+                <div className="h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner"><div className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-500 ease-out rounded-full" style={{ width: `${progress}%` }} /></div>
+              </div>
+              <div className="w-full max-w-3xl bg-white p-6 sm:p-10 rounded-3xl shadow-xl border border-gray-100 mb-24 relative overflow-hidden animate-enter">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+                <div className="mb-8"><span className="inline-block bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-1 rounded mb-3 tracking-wide">ID: {currentQ.id}</span><h2 className="text-xl sm:text-2xl font-bold text-gray-800 leading-normal">{currentQ.q}</h2></div>
+                <div className="space-y-3">
+                  {shuffledOptions.map((option, idx) => {
+                    let containerClass = "w-full p-5 rounded-2xl border-2 text-left transition-all duration-200 flex justify-between items-center relative overflow-hidden ";
+                    if (selectedOption) {
+                      if (option.key === currentQ.correct) containerClass += "border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-200";
+                      else if (option.key === selectedOption) containerClass += "border-rose-500 bg-rose-50 text-rose-800 ring-2 ring-rose-200";
+                      else containerClass += "border-gray-100 text-gray-400 opacity-60";
+                    } else containerClass += "border-gray-100 hover:border-emerald-300 hover:bg-emerald-50/50 cursor-pointer active:scale-[0.99] text-gray-600";
+                    return (
+                      <button key={idx} onClick={() => handleOptionSelect(option.key)} disabled={!!selectedOption} className={containerClass}>
+                        <span className="relative z-10 font-medium text-lg">{option.text}</span>
+                        {selectedOption && option.key === currentQ.correct && <CheckCircle className="text-emerald-600 relative z-10" size={24} />}
+                        {selectedOption && option.key === selectedOption && option.key !== currentQ.correct && <XCircle className="text-rose-600 relative z-10" size={24} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-200 flex justify-center items-center gap-4 z-20">
+                <button onClick={prevQuestion} disabled={currentQuestionIndex === 0} className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${currentQuestionIndex === 0 ? 'bg-gray-100 text-gray-300' : 'bg-white border-2 border-gray-200 text-gray-600 hover:border-gray-400'}`}><ChevronLeft size={24} /></button>
+                <button onClick={nextQuestion} disabled={!selectedOption && !sessionAnswers.some(a => a.id === currentQ.id)} className={`flex-1 max-w-md h-14 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all transform active:scale-95 ${(!selectedOption && !sessionAnswers.some(a => a.id === currentQ.id)) ? 'bg-gray-100 text-gray-400' : isCorrect ? 'bg-emerald-600 text-white shadow-emerald-200' : 'bg-gray-800 text-white shadow-gray-300'}`}>{currentQuestionIndex === questions.length - 1 ? "Xem kết quả" : "Câu tiếp theo"} <ChevronRight size={24} /></button>
+              </div>
+            </div>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<QuizApp />);
+    </script>
+</body>
+</html>
